@@ -1946,11 +1946,12 @@ body.cursor-hidden .cyber-cursor {
    SETLOVE SLIDE PANEL + ARROW
    ==================================================================== */
 
-/* Nút mũi tên/trái tim — nằm giữa bên phải màn hình */
+/* Nút mũi tên/trái tim — giữa bên phải màn hình, nằm NGOÀI card
+   (không đè lên nội dung bên trong) */
 .love-arrow {
     position: fixed;
     top: 50%;
-    right: 18px;
+    right: 10px;
     transform: translateY(-50%);
     z-index: 120;
     width: 44px;
@@ -1981,7 +1982,6 @@ body.cursor-hidden .cyber-cursor {
 }
 
 body.love-open .love-arrow {
-    right: calc(min(880px, 96vw) + 30px);
     color: #ff8fb8;
     background: rgba(255, 107, 157, 0.14);
 }
@@ -1990,13 +1990,13 @@ body.love-open .love-arrow i {
     transform: scaleX(-1);
 }
 
-/* Panel trượt — phủ bên phải màn hình, cao hết */
+/* Panel trượt — phủ đúng vùng .bio-card (nằm TRONG card, bo góc theo card) */
 .setlove-panel {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
-    height: 100vh;
-    width: min(880px, 96vw);
+    height: 100%;
+    width: 100%;
     z-index: 110;
     transform: translateX(102%);
     transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2009,6 +2009,16 @@ body.love-open .love-arrow i {
     display: grid;
     place-items: center;
     overflow: hidden;
+}
+
+/* Canvas trái tim bay — nền động phía sau nội dung */
+.love-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
 }
 
 body.love-open .setlove-panel {
@@ -2063,8 +2073,61 @@ body.love-open .main-viewport {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 22px;
+    gap: 26px;
     flex-wrap: wrap;
+}
+
+.setlove-person {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.setlove-avatar-wrap {
+    position: relative;
+    width: 92px;
+    height: 92px;
+}
+
+.setlove-avatar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 107, 157, 0.5);
+    box-shadow: 0 8px 24px rgba(255, 107, 157, 0.35);
+    background: #16131a;
+}
+
+.setlove-avatar-fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-family: var(--font-heading);
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: #ffd1e3;
+    background: linear-gradient(150deg, rgba(255, 107, 157, 0.3), rgba(255, 107, 157, 0.08));
+    border: 3px solid rgba(255, 107, 157, 0.5);
+    box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
+}
+
+.setlove-avatar-decoration {
+    position: absolute;
+    /* Khung Discord to hơn avatar ~15% và căn giữa — đúng tỉ lệ Discord hiển thị */
+    width: 130%;
+    height: 130%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 2;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
 }
 
 .setlove-name {
@@ -2155,14 +2218,24 @@ body.love-open .main-viewport {
     color: var(--text-secondary);
     font-style: italic;
     line-height: 1.7;
+    min-height: 3.2em;
+    display: grid;
+    place-items: center;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* Mobile: panel chiếm gần hết màn hình, thu nhỏ khoảng trượt của bio */
+/* Khi đổi câu: câu cũ mờ đi + trượt lên nhẹ, câu mới trượt lên hiện rõ */
+.setlove-quote.swap {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+/* Mobile: panel vẫn trong card, nút trái tim khi mở chuyển lên góc phải trên để dễ bấm quay lại */
 @media (max-width: 640px) {
-    .setlove-panel { width: 96vw; }
+    .setlove-panel { width: 100%; }
     body.love-open .main-viewport { transform: translateX(-40px); }
-    .love-arrow { right: 12px; width: 40px; height: 40px; }
-    body.love-open .love-arrow { right: calc(96vw + 18px); }
+    .love-arrow { right: 8px; width: 40px; height: 40px; }
+    body.love-open .love-arrow { right: 14px; top: 14px; transform: none; z-index: 130; }
     .setlove-counter { grid-template-columns: repeat(2, 1fr); }
 }
 

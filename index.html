@@ -359,17 +359,35 @@
 
                 <!-- Setlove Slide Panel (trượt từ phải sang) -->
                 <div class="setlove-panel" id="setlove-panel" aria-hidden="true">
+                    <!-- Canvas trái tim bay (nền động) -->
+                    <canvas class="love-canvas" id="love-canvas" aria-hidden="true"></canvas>
                     <div class="setlove-inner">
                         <div class="setlove-decor" aria-hidden="true">
                             <span>💗</span><span>🌸</span><span>✨</span><span>💗</span><span>🌸</span>
                         </div>
 
                         <div class="setlove-names">
-                            <span class="setlove-name" id="setlove-my-name">Nguyễn Lương</span>
+                            <div class="setlove-person">
+                                <div class="setlove-avatar-wrap">
+                                    <span class="setlove-avatar-fallback" id="setlove-my-fallback">L</span>
+                                    <img class="setlove-avatar" id="setlove-my-avatar" alt="Avatar của Lương" hidden>
+                                    <img class="setlove-avatar-decoration" id="setlove-my-deco" alt="" aria-hidden="true" hidden>
+                                </div>
+                                <span class="setlove-name" id="setlove-my-name">Lương</span>
+                            </div>
+
                             <span class="setlove-heart-wrap">
                                 <i class="fa-solid fa-heart setlove-heart" id="setlove-heart"></i>
                             </span>
-                            <span class="setlove-name" id="setlove-partner-name">Bé Yêu</span>
+
+                            <div class="setlove-person">
+                                <div class="setlove-avatar-wrap">
+                                    <span class="setlove-avatar-fallback" id="setlove-partner-fallback">T</span>
+                                    <img class="setlove-avatar" id="setlove-partner-avatar" alt="Avatar của Tuyết Anh" hidden>
+                                    <img class="setlove-avatar-decoration" id="setlove-partner-deco" alt="" aria-hidden="true" hidden>
+                                </div>
+                                <span class="setlove-name" id="setlove-partner-name">Tuyết Anh</span>
+                            </div>
                         </div>
 
                         <div class="setlove-caption">
@@ -395,7 +413,7 @@
                             </div>
                         </div>
 
-                        <div class="setlove-quote" id="setlove-quote">"Yêu nhau yêu hẳn đi — đừng nửa vời nửa vời" 💕</div>
+                        <div class="setlove-quote" id="setlove-quote" title="Bấm để đổi câu khác 💕">"Yêu nhau yêu hẳn đi — đừng nửa vời nửa vời 💕"</div>
                     </div>
                 </div>
 
@@ -432,7 +450,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts with Cache Buster -->
-    <script src="config.js?v=8.0"></script>
-    <script src="script.js?v=8.0"></script>
+    <script src="config.js?v=8.2"></script>
+    <script src="script.js?v=8.2"></script>
 </body>
 </html>

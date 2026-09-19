@@ -78,10 +78,26 @@ const CONFIG = {
     // 4.1 MÀN "SETLOVE" (trượt từ phải sang):
     //     tên tạm + ngày tạm — nhớ sửa lại cho đúng nhé!
     setlove: {
-        myName: "Nguyễn Lương",
-        partnerName: "Bé Yêu",
+        myName: "Lương",
+        partnerName: "Tuyết Anh",
+        // Avatar + khung đồng bộ từ Discord qua Lanyard (chỉ avatar & khung, tên giữ nguyên theo config)
+        myDiscordId: "1222143238056574990",
+        partnerDiscordId: "1507678870000893982",
         // Ngày bắt đầu yêu — 115 ngày tính đến 19/09/2026
-        startDate: "2026-05-27"
+        startDate: "2026-05-27",
+        // Lời nhắn yêu thương — bấm vào câu chữ ở panel để đổi qua lại
+        quotes: [
+            "Yêu nhau yêu hẳn đi — đừng nửa vời nửa vời 💕",
+            "Cả thế giới này, anh chỉ cần em 🌍",
+            "Em là món quà tuyệt vời nhất anh từng nhận được 🎁",
+            "Bên em, mỗi ngày đều là một ngày đáng sống ☀️",
+            "Anh không hứa trăm năm — anh hứa mỗi ngày đều yêu em 💍",
+            "Đường về nhà dài nhất, là đường về bên em 🏠",
+            "Yêu em không phải lựa chọn, là bản năng 💓",
+            "Có em, mọi ngày đều là ngày đáng nhớ 📖",
+            "Anh xin đợi cả đời chỉ để gặp em 💫",
+            "Anh nhớ em hơn cả nhớ bản thân mình 💗"
+        ]
     },
 
     // 5. NHẠC NỀN & PLAYLIST (AUDIO PLAYLIST):

@@ -24,13 +24,78 @@ function initSetlove() {
     const arrow = document.getElementById('love-arrow');
     if (!panel || !arrow) return;
 
+    // Nút trái tim phải nằm NGOÀI .main-viewport (có perspective/transform) để
+    // position: fixed neo vào MÀN HÌNH thật — mới đặt được ra ngoài mép card.
+    // Panel thì giữ bên trong .bio-card để phủ đúng vùng card, bo góc theo card như cũ.
+    const viewport = document.querySelector('.main-viewport');
+    if (viewport && viewport.contains(arrow)) document.body.appendChild(arrow);
+
     const cfg = CONFIG.setlove || {};
     const myName = document.getElementById('setlove-my-name');
     const partnerName = document.getElementById('setlove-partner-name');
-    const sinceEl = document.getElementById('setlove-since');
+    const startDateEl = document.getElementById('setlove-start-date');
 
     if (myName && cfg.myName) myName.textContent = cfg.myName;
     if (partnerName && cfg.partnerName) partnerName.textContent = cfg.partnerName;
+
+    // Fallback: nếu chưa có avatar Discord thì hiện chữ cái đầu tên
+    const setFallback = (id, name) => {
+        const el = document.getElementById(id);
+        if (el && name) el.textContent = name.trim().charAt(0).toUpperCase();
+    };
+    setFallback('setlove-my-fallback', cfg.myName);
+    setFallback('setlove-partner-fallback', cfg.partnerName);
+
+    // Đồng bộ avatar + khung từ Discord qua Lanyard (chỉ avatar & khung, không lấy tên)
+    const LANYARD_API = 'https://api.lanyard.rest/v1/users/';
+    const CDN = 'https://cdn.discordapp.com/';
+
+    function applyDiscordVisuals(ids, user) {
+        if (!user) return;
+        const avatarImg = document.getElementById(ids.avatar);
+        const decoImg = document.getElementById(ids.deco);
+        const fallback = document.getElementById(ids.fallback);
+
+        if (avatarImg && user.avatar) {
+            const ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
+            avatarImg.src = `${CDN}avatars/${user.id}/${user.avatar}.${ext}?size=256`;
+            avatarImg.hidden = false;
+            if (fallback) fallback.hidden = true;
+        }
+
+        if (decoImg) {
+            const decoAsset = user.avatar_decoration_data && user.avatar_decoration_data.asset;
+            if (decoAsset) {
+                decoImg.src = `${CDN}avatar-decoration-presets/${decoAsset}.png`;
+                decoImg.hidden = false;
+            } else {
+                decoImg.hidden = true;
+            }
+        }
+    }
+
+    function loadDiscordVisuals(ids, userId, retryDelay) {
+        if (!userId || !ids) return;
+        fetch(LANYARD_API + userId)
+            .then(r => r.json())
+            .then(json => {
+                if (json.success && json.data && json.data.discord_user) {
+                    applyDiscordVisuals(ids, { id: userId, ...json.data.discord_user });
+                } else if (retryDelay) {
+                    // Chưa được theo dõi bởi Lanyard — thử lại sau (vd: khi người ấy join discord.gg/lanyard)
+                    setTimeout(() => loadDiscordVisuals(ids, userId, retryDelay), retryDelay);
+                }
+            })
+            .catch(() => {
+                if (retryDelay) setTimeout(() => loadDiscordVisuals(ids, userId, retryDelay), retryDelay);
+            });
+    }
+
+    const myIds = { avatar: 'setlove-my-avatar', deco: 'setlove-my-deco', fallback: 'setlove-my-fallback' };
+    const partnerIds = { avatar: 'setlove-partner-avatar', deco: 'setlove-partner-deco', fallback: 'setlove-partner-fallback' };
+    loadDiscordVisuals(myIds, cfg.myDiscordId);
+    // Người yêu: retry mỗi 60s đến khi Lanyard nhận được dữ liệu
+    loadDiscordVisuals(partnerIds, cfg.partnerDiscordId, 60000);
 
     // Đếm ngày/giờ/phút/giây yêu nhau — cập nhật mỗi giây
     const start = cfg.startDate ? new Date(cfg.startDate + 'T00:00:00+07:00') : null;
@@ -55,9 +120,9 @@ function initSetlove() {
     tickLove();
     setInterval(tickLove, 1000);
 
-    if (sinceEl && start && !isNaN(start)) {
+    if (startDateEl && start && !isNaN(start)) {
         // Hiển thị đầy đủ ngày bắt đầu yêu: DD/MM/YYYY (giờ Việt Nam)
-        sinceEl.textContent = start.toLocaleDateString('vi-VN', {
+        startDateEl.textContent = start.toLocaleDateString('vi-VN', {
             day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh'
         });
     }
@@ -68,7 +133,180 @@ function initSetlove() {
         document.body.classList.toggle('love-open', willOpen);
         panel.setAttribute('aria-hidden', String(!willOpen));
         arrow.setAttribute('aria-label', willOpen ? 'Quay lại bio' : 'Xem phần Setlove');
+        positionArrow();
     }
+
+    // Đặt nút trái tim nằm NGOÀI mép phải của card (không đè nội dung bên trong)
+    function positionArrow() {
+        if (!arrow) return;
+        // Màn hình nhỏ: để CSS quyết định vị trí
+        if (window.innerWidth <= 640) {
+            arrow.style.right = '';
+            arrow.style.width = '';
+            arrow.style.height = '';
+            return;
+        }
+        const card = document.querySelector('.bio-card');
+        if (!card) return;
+        // Dùng offsetLeft (không bị ảnh hưởng bởi transform) để lấy mép phải "gốc" của card
+        let left = 0, n = card;
+        while (n) { left += n.offsetLeft; n = n.offsetParent; }
+        const cardRight = left + card.offsetWidth;
+        // Khi panel mở, cả card bị dịch sang trái 140px — bù lại để nút sát mép panel
+        const shift = document.body.classList.contains('love-open') ? 140 : 0;
+        const space = window.innerWidth - cardRight; // khoảng trống bên phải card
+        const size = space >= 54 ? 44 : (space >= 44 ? 38 : 32); // thu nhỏ nếu chỗ hẹp
+        const gap = space >= 54 ? 6 : 2;
+        arrow.style.right = Math.max(0, space - size - gap + shift) + 'px';
+        if (size !== 44) {
+            arrow.style.width = size + 'px';
+            arrow.style.height = size + 'px';
+        } else {
+            arrow.style.width = '';
+            arrow.style.height = '';
+        }
+    }
+    positionArrow();
+
+    // Cập nhật lại khi resize / layout thay đổi — tắt animation tạm để không bị trôi
+    let arrowResizeTimer = null;
+    window.addEventListener('resize', () => {
+        arrow.style.transition = 'none';
+        positionArrow();
+        clearTimeout(arrowResizeTimer);
+        arrowResizeTimer = setTimeout(() => { arrow.style.transition = ''; }, 150);
+    });
+    window.addEventListener('load', positionArrow);
+    setTimeout(positionArrow, 400);
+    setTimeout(positionArrow, 1200);
+    if (window.ResizeObserver) new ResizeObserver(positionArrow).observe(document.body);
+
+    // Câu nói yêu thương — tự động đổi qua lại (vẫn giữ hiệu ứng khi đổi)
+    const quoteEl = document.getElementById('setlove-quote');
+    const quotes = Array.isArray(cfg.quotes) && cfg.quotes.length ? cfg.quotes : ['Yêu nhau yêu hẳn đi 💕'];
+    const QUOTE_INTERVAL = 6000; // đổi câu mỗi 6 giây
+    let quoteIndex = 0;
+
+    function showQuote(text) {
+        quoteEl.textContent = `"${text}"`;
+    }
+
+    function nextQuote() {
+        quoteIndex = (quoteIndex + 1) % quotes.length;
+        quoteEl.classList.add('swap');
+        setTimeout(() => {
+            showQuote(quotes[quoteIndex]);
+            quoteEl.classList.remove('swap');
+        }, 300);
+    }
+
+    if (quoteEl && quotes.length > 1) {
+        showQuote(quotes[0]);
+        setInterval(nextQuote, QUOTE_INTERVAL);
+    } else if (quoteEl) {
+        showQuote(quotes[0]);
+    }
+
+    // Trái tim bay — canvas nền động khi mở panel
+    const loveCanvas = document.getElementById('love-canvas');
+    let heartsRunning = false;
+    let heartsSpawn = null;
+
+    function startHearts() {
+        if (!loveCanvas || heartsRunning) return;
+        heartsRunning = true;
+        const ctx = loveCanvas.getContext('2d');
+        let W, H;
+        const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+        function resize() {
+            W = loveCanvas.clientWidth;
+            H = loveCanvas.clientHeight;
+            loveCanvas.width = W * DPR;
+            loveCanvas.height = H * DPR;
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const COLORS = ['#ff6b9d', '#ff8fb8', '#ff4f8b', '#ffa5c6', '#e8558f'];
+        const hearts = [];
+
+        function spawnHeart() {
+            hearts.push({
+                x: Math.random() * W,
+                y: H + 20,
+                size: 5 + Math.random() * 11,
+                vy: 0.45 + Math.random() * 1.05,
+                drift: Math.random() * 2 * Math.PI,
+                driftSpeed: 0.008 + Math.random() * 0.02,
+                sway: 12 + Math.random() * 26,
+                alpha: 0.25 + Math.random() * 0.5,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                spin: (Math.random() - 0.5) * 0.02,
+                angle: 0
+            });
+        }
+
+        function drawHeart(x, y, s, rot, color, alpha) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rot);
+            ctx.scale(s / 12, s / 12);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(0, 4);
+            ctx.bezierCurveTo(0, 1, -2.2, -1.5, -6, -1.5);
+            ctx.bezierCurveTo(-11.5, -1.5, -11.5, 4.5, -11.5, 4.5);
+            ctx.bezierCurveTo(-11.5, 8.5, -7.5, 12, 0, 16.5);
+            ctx.bezierCurveTo(7.5, 12, 11.5, 8.5, 11.5, 4.5);
+            ctx.bezierCurveTo(11.5, 4.5, 11.5, -1.5, 6, -1.5);
+            ctx.bezierCurveTo(2.2, -1.5, 0, 1, 0, 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Rải tim đều ngay từ đầu để không phải chờ
+        for (let i = 0; i < 26; i++) {
+            spawnHeart();
+            hearts[hearts.length - 1].y = Math.random() * H;
+        }
+
+        function loop() {
+            if (!heartsRunning) return;
+            ctx.clearRect(0, 0, W, H);
+
+            if (Math.random() < 0.08 && hearts.length < 60) spawnHeart();
+
+            for (let i = hearts.length - 1; i >= 0; i--) {
+                const h = hearts[i];
+                h.y -= h.vy;
+                h.drift += h.driftSpeed;
+                h.angle += h.spin;
+                const x = h.x + Math.sin(h.drift) * h.sway;
+
+                drawHeart(x, h.y, h.size, h.angle, h.color, h.alpha);
+
+                if (h.y < -30) hearts.splice(i, 1);
+            }
+            requestAnimationFrame(loop);
+        }
+        loop();
+    }
+
+    function stopHearts() {
+        heartsRunning = false;
+    }
+
+    // Chạy/dừng canvas theo panel — tiết kiệm CPU khi panel đóng
+    const originalToggle = toggle;
+    toggle = function (open) {
+        originalToggle(open);
+        if (document.body.classList.contains('love-open')) startHearts();
+        else stopHearts();
+    };
 
     arrow.addEventListener('click', () => toggle());
 
