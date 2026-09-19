@@ -1992,15 +1992,14 @@ body.love-open .love-arrow i {
     transform: scaleX(-1);
 }
 
-/* Panel trượt — nguyên giá trị như bản gốc (top/right/height/width y hệt),
-   chỉ đổi `fixed` -> `absolute` để panel LUÔN được neo vào card (bản gốc dựa vào
-   transform nghiêng của card — chỉ đúng khi chuột đang di chuyển).
-   Nhờ vậy nội dung vẫn được căn giữa ở mức "mép trên card + nửa màn hình" như cũ. */
+/* Panel trượt — neo vào mép phải card, bị card bo góc cắt.
+   height 100% => nội dung được căn giữa TRONG vùng nhìn thấy của card
+   (thay vì giữa 100vh như trước làm nội dung trông bị tụt xuống dưới). */
 .setlove-panel {
     position: absolute;
     top: 0;
     right: 0;
-    height: 100vh;
+    height: 100%;
     width: min(880px, 96vw);
     z-index: 110;
     transform: translateX(102%);
