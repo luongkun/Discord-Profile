@@ -67,12 +67,22 @@ const CONFIG = {
     ],
 
     // 4. MẠNG XÃ HỘI / LIÊN HỆ (DIRECT CONNECTIONS):
+    // Mục có field "copy" sẽ KHÔNG mở link — click là sao chép giá trị đó + toast thông báo.
     socials: [
-        { name: "Facebook", icon: "fa-brands fa-facebook", url: "https://www.facebook.com/profile.php?id=61584447984018" },
-        { name: "Instagram", icon: "fa-brands fa-instagram", url: "https://www.instagram.com/luongkun/" },
-        { name: "TikTok", icon: "fa-brands fa-tiktok", url: "https://www.tiktok.com/@luongkun" },
-        { name: "Spotify", icon: "fa-brands fa-spotify", url: "https://open.spotify.com/user/31ato47cmp3pbledliuc5vd573rm?si=5d6bb489d065454c" }
+        { name: "Facebook", icon: "fa-brands fa-facebook", url: "https://www.facebook.com/nlwos" },
+        { name: "Email", icon: "fa-solid fa-envelope", url: "", copy: "lucifermeta0210@gmail.com" },
+        { name: "TikTok", icon: "fa-brands fa-tiktok", url: "https://www.tiktok.com/@nlwo2" },
+        { name: "Spotify", icon: "fa-brands fa-spotify", url: "https://open.spotify.com/user/31qttkds2lxweu7s5qxqrms2ab2i?si=d5a2f7b40b2e412f" }
     ],
+
+    // 4.1 MÀN "SETLOVE" (trượt từ phải sang):
+    //     tên tạm + ngày tạm — nhớ sửa lại cho đúng nhé!
+    setlove: {
+        myName: "Nguyễn Lương",
+        partnerName: "Bé Yêu",
+        // Ngày bắt đầu yêu — 115 ngày tính đến 19/09/2026
+        startDate: "2026-05-27"
+    },
 
     // 5. NHẠC NỀN & PLAYLIST (AUDIO PLAYLIST):
     music: {

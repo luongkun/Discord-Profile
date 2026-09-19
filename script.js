@@ -13,7 +13,70 @@ document.addEventListener('DOMContentLoaded', () => {
     initLanyardRealtime();
     initLocalClock();
     initGreeting();
+    initSetlove();
 });
+
+/* ====================================================================
+   0.5 SETLOVE SLIDE PANEL (tên + trái tim + đếm ngày yêu)
+   ==================================================================== */
+function initSetlove() {
+    const panel = document.getElementById('setlove-panel');
+    const arrow = document.getElementById('love-arrow');
+    if (!panel || !arrow) return;
+
+    const cfg = CONFIG.setlove || {};
+    const myName = document.getElementById('setlove-my-name');
+    const partnerName = document.getElementById('setlove-partner-name');
+    const sinceEl = document.getElementById('setlove-since');
+
+    if (myName && cfg.myName) myName.textContent = cfg.myName;
+    if (partnerName && cfg.partnerName) partnerName.textContent = cfg.partnerName;
+
+    // Đếm ngày/giờ/phút/giây yêu nhau — cập nhật mỗi giây
+    const start = cfg.startDate ? new Date(cfg.startDate + 'T00:00:00+07:00') : null;
+    const ids = ['love-days', 'love-hours', 'love-mins', 'love-secs'];
+    const cells = ids.map(id => document.getElementById(id));
+
+    function tickLove() {
+        if (!start || isNaN(start) || !cells[0]) return;
+        let diff = Date.now() - start.getTime();
+        if (diff < 0) diff = 0;
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor(diff / 3600000) % 24;
+        const mins = Math.floor(diff / 60000) % 60;
+        const secs = Math.floor(diff / 1000) % 60;
+        const vals = [days, hours, mins, secs];
+        for (let i = 0; i < 4; i++) {
+            if (cells[i] && cells[i].textContent !== String(vals[i])) {
+                cells[i].textContent = vals[i];
+            }
+        }
+    }
+    tickLove();
+    setInterval(tickLove, 1000);
+
+    if (sinceEl && start && !isNaN(start)) {
+        // Hiển thị đầy đủ ngày bắt đầu yêu: DD/MM/YYYY (giờ Việt Nam)
+        sinceEl.textContent = start.toLocaleDateString('vi-VN', {
+            day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh'
+        });
+    }
+
+    // Mở/đóng panel trượt
+    function toggle(open) {
+        const willOpen = open !== undefined ? open : !document.body.classList.contains('love-open');
+        document.body.classList.toggle('love-open', willOpen);
+        panel.setAttribute('aria-hidden', String(!willOpen));
+        arrow.setAttribute('aria-label', willOpen ? 'Quay lại bio' : 'Xem phần Setlove');
+    }
+
+    arrow.addEventListener('click', () => toggle());
+
+    // ESC để đóng
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') toggle(false);
+    });
+}
 
 /* ====================================================================
    1. PROFILE UI INITIALIZATION FROM CONFIG
@@ -124,16 +187,21 @@ function initProfileUI() {
         CONFIG.socials.forEach(soc => {
             const a = document.createElement('a');
             a.className = 'social-pill';
-            a.href = soc.url;
-            a.target = '_blank';
+            a.href = soc.url || '#';
+            a.target = soc.url ? '_blank' : null;
             a.rel = 'noopener noreferrer';
             a.innerHTML = `<i class="${soc.icon}"></i> <span>${soc.name}</span>`;
 
             if (soc.copy) {
+                // Mục copy (vd Email): chặn điều hướng, sao chép vào clipboard + toast
                 a.addEventListener('click', (e) => {
-                    // If it has copy tag, copy and toast
-                    navigator.clipboard.writeText(soc.copy);
-                    showToast(`Đã sao chép ${soc.name}: ${soc.copy}`);
+                    e.preventDefault();
+                    navigator.clipboard.writeText(soc.copy).then(() => {
+                        showToast(`Đã sao chép ${soc.name}: ${soc.copy}`);
+                        playBeepSound(640, 0.08);
+                    }).catch(() => {
+                        showToast(`Không sao chép được ${soc.name}`);
+                    });
                 });
             }
 

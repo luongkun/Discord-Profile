@@ -1943,6 +1943,235 @@ body.cursor-hidden .cyber-cursor {
 }
 
 /* ====================================================================
+   SETLOVE SLIDE PANEL + ARROW
+   ==================================================================== */
+
+/* Nút mũi tên/trái tim — nằm giữa bên phải màn hình */
+.love-arrow {
+    position: fixed;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    z-index: 120;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(20, 20, 24, 0.75);
+    backdrop-filter: blur(10px);
+    color: #ff6b9d;
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                right 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+.love-arrow:hover {
+    transform: translateY(-50%) scale(1.12);
+    background: rgba(255, 107, 157, 0.18);
+    box-shadow: 0 10px 30px rgba(255, 107, 157, 0.35);
+}
+
+.love-arrow i {
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.love-open .love-arrow {
+    right: calc(min(880px, 96vw) + 30px);
+    color: #ff8fb8;
+    background: rgba(255, 107, 157, 0.14);
+}
+
+body.love-open .love-arrow i {
+    transform: scaleX(-1);
+}
+
+/* Panel trượt — phủ bên phải màn hình, cao hết */
+.setlove-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(880px, 96vw);
+    z-index: 110;
+    transform: translateX(102%);
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    background:
+        radial-gradient(ellipse at 30% 20%, rgba(255, 107, 157, 0.16), transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(255, 107, 157, 0.10), transparent 55%),
+        linear-gradient(160deg, #100d12 0%, #0c0a0f 100%);
+    border-left: 1px solid rgba(255, 107, 157, 0.22);
+    box-shadow: -30px 0 80px rgba(0, 0, 0, 0.6);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+}
+
+body.love-open .setlove-panel {
+    transform: translateX(0);
+}
+
+/* Nền bio cũng trượt nhẹ sang trái theo — tạo cảm giác đồng bộ */
+.main-viewport,
+#bg-canvas,
+#mouse-spotlight {
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.love-open .main-viewport {
+    transform: translateX(-140px);
+}
+
+.setlove-inner {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 40px 48px;
+    max-width: 560px;
+}
+
+.setlove-decor {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.setlove-decor span {
+    position: absolute;
+    font-size: 1.2rem;
+    opacity: 0.35;
+    animation: loveFloat 9s ease-in-out infinite;
+}
+
+.setlove-decor span:nth-child(1) { top: 12%; left: 12%; animation-delay: 0s; }
+.setlove-decor span:nth-child(2) { top: 22%; right: 14%; animation-delay: -2s; font-size: 1.5rem; }
+.setlove-decor span:nth-child(3) { bottom: 18%; left: 18%; animation-delay: -4s; font-size: 1.1rem; }
+.setlove-decor span:nth-child(4) { bottom: 26%; right: 10%; animation-delay: -6s; }
+.setlove-decor span:nth-child(5) { top: 45%; left: 6%;  animation-delay: -8s; font-size: 0.9rem; }
+
+@keyframes loveFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.28; }
+    50% { transform: translateY(-22px) rotate(8deg); opacity: 0.55; }
+}
+
+.setlove-names {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.setlove-name {
+    font-family: var(--font-heading);
+    font-size: clamp(1.5rem, 4vw, 2.3rem);
+    font-weight: 700;
+    color: var(--text-white);
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 0%, #ffd1e3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.setlove-heart-wrap {
+    display: inline-grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 107, 157, 0.24), transparent 70%);
+}
+
+.setlove-heart {
+    font-size: 2rem;
+    color: #ff6b9d;
+    filter: drop-shadow(0 0 14px rgba(255, 107, 157, 0.7));
+    animation: heartBeat 1.3s ease-in-out infinite;
+}
+
+@keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    14% { transform: scale(1.22); }
+    28% { transform: scale(1); }
+    42% { transform: scale(1.22); }
+    70% { transform: scale(1); }
+}
+
+.setlove-caption {
+    margin-top: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+}
+
+.setlove-counter {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 34px;
+}
+
+.love-cell {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 107, 157, 0.2);
+    border-radius: var(--inner-radius);
+    padding: 18px 8px;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.love-cell:hover {
+    border-color: rgba(255, 107, 157, 0.45);
+    transform: translateY(-3px);
+}
+
+.love-num {
+    font-family: var(--font-mono);
+    font-size: clamp(1.4rem, 3.5vw, 2rem);
+    font-weight: 700;
+    color: #ff9ec4;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 18px rgba(255, 107, 157, 0.4);
+}
+
+.love-label {
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+}
+
+.setlove-quote {
+    margin-top: 30px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    line-height: 1.7;
+}
+
+/* Mobile: panel chiếm gần hết màn hình, thu nhỏ khoảng trượt của bio */
+@media (max-width: 640px) {
+    .setlove-panel { width: 96vw; }
+    body.love-open .main-viewport { transform: translateX(-40px); }
+    .love-arrow { right: 12px; width: 40px; height: 40px; }
+    body.love-open .love-arrow { right: calc(96vw + 18px); }
+    .setlove-counter { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .setlove-panel, .main-viewport, .love-arrow, .love-arrow i { transition: none; }
+    .setlove-heart, .setlove-decor span { animation: none; }
+}
+
+/* ====================================================================
    RESPONSIVE DESIGN (Adaptive for Smaller Tablets / Mobile)
    ==================================================================== */
 @media (max-width: 900px) {
