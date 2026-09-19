@@ -24,9 +24,9 @@ function initSetlove() {
     const arrow = document.getElementById('love-arrow');
     if (!panel || !arrow) return;
 
-    // Nút trái tim phải nằm NGOÀI .main-viewport (có perspective/transform) để
-    // position: fixed neo vào MÀN HÌNH thật — mới đặt được ra ngoài mép card.
-    // Panel thì giữ bên trong .bio-card để phủ đúng vùng card, bo góc theo card như cũ.
+    // Nút trái tim phải nằm NGOÀI .main-viewport (tổ tiên có perspective/transform)
+    // thì `position: fixed` mới neo vào MÀN HÌNH thật — nhờ đó mới đặt được nút
+    // ra NGOÀI mép phải card. Panel thì vẫn ở TRONG card (không dời đi đâu).
     const viewport = document.querySelector('.main-viewport');
     if (viewport && viewport.contains(arrow)) document.body.appendChild(arrow);
 
@@ -136,14 +136,36 @@ function initSetlove() {
         positionArrow();
     }
 
-    // Đặt nút trái tim nằm NGOÀI mép phải của card (không đè nội dung bên trong)
+    // Đặt nút trái tim:
+    // - Panel ĐÓNG: nằm NGOÀI mép phải card (không đè nội dung)
+    // - Panel MỞ: trượt sang trái theo panel, đứng cách mép trái panel 20px
+    // Khoảng cách nút tối đa cho phép tính từ mép phải màn hình (44px nút + 6px lề)
+    const MAX_RIGHT = 50;
+
     function positionArrow() {
         if (!arrow) return;
-        // Màn hình nhỏ: để CSS quyết định vị trí
-        if (window.innerWidth <= 640) {
-            arrow.style.right = '';
+        if (document.body.classList.contains('love-open')) {
+            // Panel MỞ: panel nằm trong card, neo mép phải card, rộng tối đa 880px.
+            // Khi mở, card bị dịch sang trái `shift` px (xem CSS .main-viewport) nên
+            // mép trái panel trên màn hình = mép phải card - shift - bề rộng panel.
+            // Đặt nút cách mép trái panel 20px: nhờ transition `right` cùng duration với
+            // panel, nút trượt sang TRÁI cùng nhịp với panel (không đứng yên bên phải).
+            // (dùng offsetWidth/offsetLeft để không bị ảnh hưởng bởi transform đang chạy)
             arrow.style.width = '';
             arrow.style.height = '';
+            const openCard = document.querySelector('.bio-card');
+            if (!openCard) return;
+            let cardLeft = 0, node = openCard;
+            while (node) { cardLeft += node.offsetLeft; node = node.offsetParent; }
+            const shift = window.innerWidth <= 640 ? 40 : 140; // khớp với translateX của .main-viewport
+            // Bề rộng panel THẬT theo CSS (tránh lặp lại con số 880 ở 2 nơi)
+            const panelWidth = parseFloat(getComputedStyle(panel).width) || openCard.offsetWidth;
+            const panelLeft = cardLeft + openCard.offsetWidth - shift - panelWidth;
+            // Màn hẹp: panel phủ gần hết card nên không còn chỗ đứng hẳn ra ngoài —
+            // kẹp lại để nút luôn còn nhìn thấy & bấm được (nằm vắt mép trái panel).
+            const ideal = window.innerWidth - panelLeft + 20;
+            const maxRight = Math.max(0, window.innerWidth - MAX_RIGHT);
+            arrow.style.right = Math.min(Math.max(0, ideal), maxRight) + 'px';
             return;
         }
         const card = document.querySelector('.bio-card');
@@ -152,12 +174,10 @@ function initSetlove() {
         let left = 0, n = card;
         while (n) { left += n.offsetLeft; n = n.offsetParent; }
         const cardRight = left + card.offsetWidth;
-        // Khi panel mở, cả card bị dịch sang trái 140px — bù lại để nút sát mép panel
-        const shift = document.body.classList.contains('love-open') ? 140 : 0;
         const space = window.innerWidth - cardRight; // khoảng trống bên phải card
         const size = space >= 54 ? 44 : (space >= 44 ? 38 : 32); // thu nhỏ nếu chỗ hẹp
         const gap = space >= 54 ? 6 : 2;
-        arrow.style.right = Math.max(0, space - size - gap + shift) + 'px';
+        arrow.style.right = Math.max(0, space - size - gap) + 'px';
         if (size !== 44) {
             arrow.style.width = size + 'px';
             arrow.style.height = size + 'px';
@@ -167,6 +187,16 @@ function initSetlove() {
         }
     }
     positionArrow();
+
+    // Khi panel trượt xong (mở hoặc đóng): đo vị trí thật của panel và đặt nút cách mép trái panel 20px
+    panel.addEventListener('transitionend', (e) => {
+        if (e.propertyName !== 'transform') return;
+        if (!document.body.classList.contains('love-open')) { positionArrow(); return; }
+        // Hiệu chỉnh theo mép trái panel THẬT (phòng khi bề rộng panel lệch chút so với ước lượng)
+        const rect = panel.getBoundingClientRect();
+        const ideal = window.innerWidth - rect.left + 20;
+        arrow.style.right = Math.min(ideal, Math.max(0, window.innerWidth - MAX_RIGHT)) + 'px';
+    });
 
     // Cập nhật lại khi resize / layout thay đổi — tắt animation tạm để không bị trôi
     let arrowResizeTimer = null;

@@ -1981,6 +1981,8 @@ body.cursor-hidden .cyber-cursor {
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Vị trí nút lúc mở do JS tính (panel nằm trong card nên mốc toạ độ khác CSS),
+   ở đây chỉ đổi màu/hiệu ứng cho khớp trạng thái mở */
 body.love-open .love-arrow {
     color: #ff8fb8;
     background: rgba(255, 107, 157, 0.14);
@@ -1990,13 +1992,16 @@ body.love-open .love-arrow i {
     transform: scaleX(-1);
 }
 
-/* Panel trượt — phủ đúng vùng .bio-card (nằm TRONG card, bo góc theo card) */
+/* Panel trượt — nguyên giá trị như bản gốc (top/right/height/width y hệt),
+   chỉ đổi `fixed` -> `absolute` để panel LUÔN được neo vào card (bản gốc dựa vào
+   transform nghiêng của card — chỉ đúng khi chuột đang di chuyển).
+   Nhờ vậy nội dung vẫn được căn giữa ở mức "mép trên card + nửa màn hình" như cũ. */
 .setlove-panel {
     position: absolute;
     top: 0;
     right: 0;
-    height: 100%;
-    width: 100%;
+    height: 100vh;
+    width: min(880px, 96vw);
     z-index: 110;
     transform: translateX(102%);
     transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2073,7 +2078,7 @@ body.love-open .main-viewport {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 26px;
+    gap: 22px;
     flex-wrap: wrap;
 }
 
@@ -2230,12 +2235,11 @@ body.love-open .main-viewport {
     transform: translateY(-6px);
 }
 
-/* Mobile: panel vẫn trong card, nút trái tim khi mở chuyển lên góc phải trên để dễ bấm quay lại */
+/* Mobile: panel chiếm gần hết màn hình, thu nhỏ khoảng trượt của bio (như bản gốc).
+   Vị trí nút trái tim do JS tính cho mọi khổ màn hình (xem positionArrow). */
 @media (max-width: 640px) {
-    .setlove-panel { width: 100%; }
+    .setlove-panel { width: 96vw; }
     body.love-open .main-viewport { transform: translateX(-40px); }
-    .love-arrow { right: 8px; width: 40px; height: 40px; }
-    body.love-open .love-arrow { right: 14px; top: 14px; transform: none; z-index: 130; }
     .setlove-counter { grid-template-columns: repeat(2, 1fr); }
 }
 
