@@ -6,6 +6,10 @@
  */
 
 const CONFIG = {
+    // 0. TÊN WEB (hiện ở tiêu đề tab, thẻ og:title khi share link).
+    //    Để trống "" nếu muốn tiêu đề chạy theo tên hiển thị Discord.
+    siteName: "luongkun",
+
     // 1. DISCORD USER ID:
     discordId: "1222143238056574990",
 
@@ -65,8 +69,8 @@ const CONFIG = {
     // 4. MẠNG XÃ HỘI / LIÊN HỆ (DIRECT CONNECTIONS):
     socials: [
         { name: "Facebook", icon: "fa-brands fa-facebook", url: "https://www.facebook.com/profile.php?id=61584447984018" },
-        { name: "Instagram", icon: "fa-brands fa-instagram", url: "https://www.instagram.com/duongtran.07/" },
-        { name: "TikTok", icon: "fa-brands fa-tiktok", url: "https://www.tiktok.com/@duongtran.user" },
+        { name: "Instagram", icon: "fa-brands fa-instagram", url: "https://www.instagram.com/luongkun/" },
+        { name: "TikTok", icon: "fa-brands fa-tiktok", url: "https://www.tiktok.com/@luongkun" },
         { name: "Spotify", icon: "fa-brands fa-spotify", url: "https://open.spotify.com/user/31ato47cmp3pbledliuc5vd573rm?si=5d6bb489d065454c" }
     ],
 

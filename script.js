@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
    1. PROFILE UI INITIALIZATION FROM CONFIG
    ==================================================================== */
 function initProfileUI() {
-    // Set Browser Document Title
-    document.title = `ProFile ${CONFIG.profile.name}` || "ProFile Dương Trần";
+    // Set Browser Document Title (ưu tiên CONFIG.siteName — tên web, không phụ thuộc tên Discord)
+    document.title = `ProFile ${CONFIG.siteName || CONFIG.profile.name}`;
 
     // Set Profile Text
     const nameEl = document.getElementById('user-display-name');
@@ -334,7 +334,7 @@ function initAudioController() {
     } else if (CONFIG.music.url) {
         playlist = [{
             title: CONFIG.music.title || 'Lofi Chill',
-            artist: CONFIG.music.artist || 'Dương Trần',
+            artist: CONFIG.music.artist || 'luongkun',
             url: CONFIG.music.url
         }];
     }
@@ -1100,7 +1100,7 @@ function updateDiscordPresenceUI(data) {
             if (nameEl) nameEl.textContent = liveName;
             const enterNameEl = document.querySelector('.cute-name, .enter-name');
             if (enterNameEl) enterNameEl.textContent = liveName;
-            document.title = `ProFile ${liveName}`;
+            if (!CONFIG.siteName) document.title = `ProFile ${liveName}`;
             CONFIG.profile.name = liveName;
         }
 
