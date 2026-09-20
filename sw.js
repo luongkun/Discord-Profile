@@ -31,7 +31,10 @@ self.addEventListener('fetch', (e) => {
     if (req.headers.has('range')) return;
 
     e.respondWith(
-        // Mạng trước — không bao giờ phục vụ bản cũ khi còn online
+        // Mạng trước — không bao giờ phục vụ bản cũ khi còn online.
+        // Chuỗi này được thiết kế để KHÔNG BAO GIỜ reject: nếu promise của
+        // respondWith reject, trình duyệt coi cả request là lỗi mạng và trang
+        // sẽ không tải được — đúng kiểu sự cố không được phép xảy ra.
         fetch(req)
             .then((res) => {
                 // Chỉ cache phản hồi 200 hoàn chỉnh (bỏ 206/redirect)
@@ -41,10 +44,13 @@ self.addEventListener('fetch', (e) => {
                 }
                 return res;
             })
-            .catch(() =>
-                // Khi mất mạng: trả bản đã cache; điều hướng tới đường dẫn lạ thì
-                // trả trang chính (đã cache sẵn dưới khoá './')
-                caches.match(req).then((hit) => hit || (req.mode === 'navigate' ? caches.match('./') : Response.error()))
-            )
+            .catch(() => caches.match(req))
+            // Không có cache: điều hướng thì trả trang chính đã cache
+            .then((hit) => hit || (req.mode === 'navigate' ? caches.match('./') : null))
+            .then((hit) => hit || new Response('Không có kết nối mạng.', {
+                status: 503,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+            }))
+            .catch(() => new Response('', { status: 503 }))
     );
 });
