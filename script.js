@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initGreeting();
     initSetlove();
     initDonate();
+    initBannerVisualizer();
 });
 
 /* ====================================================================
@@ -350,11 +351,30 @@ function initSetlove() {
 /* ====================================================================
    0.8 DONATE QR MODAL (bấm nút Donate -> hiện ảnh QR giữa màn hình)
    ==================================================================== */
+// Ảnh QR chỉ được tải khi khách THẬT SỰ mở hộp thoại (tiết kiệm ~152KB cho người không dùng)
+function loadDonateQr() {
+    const img = document.getElementById('donate-qr');
+    const empty = document.getElementById('donate-qr-empty');
+    const cfg = CONFIG.donate || {};
+    if (!img || img.dataset.loaded || !cfg.qrImage) return;
+    img.dataset.loaded = '1';
+    img.addEventListener('load', () => {
+        img.hidden = false;
+        if (empty) empty.hidden = true;
+    });
+    img.addEventListener('error', () => {
+        img.hidden = true;
+        if (empty) empty.hidden = false;
+    });
+    img.src = cfg.qrImage;
+}
+
 function openDonate(open) {
     const modal = document.getElementById('donate-modal');
     if (!modal) return;
     const willOpen = open !== undefined ? open : !document.body.classList.contains('donate-open');
     document.body.classList.toggle('donate-open', willOpen);
+    if (willOpen) loadDonateQr();
     modal.setAttribute('aria-hidden', String(!willOpen));
 }
 
@@ -364,23 +384,10 @@ function initDonate() {
 
     const backdrop = document.getElementById('donate-backdrop');
     const closeBtn = document.getElementById('donate-close');
-    const img = document.getElementById('donate-qr');
-    const empty = document.getElementById('donate-qr-empty');
     const info = document.getElementById('donate-info');
     const cfg = CONFIG.donate || {};
 
-    // Ảnh QR: file chưa có thì giữ khung hướng dẫn (không hiện ảnh vỡ)
-    if (img && cfg.qrImage) {
-        img.addEventListener('load', () => {
-            img.hidden = false;
-            if (empty) empty.hidden = true;
-        });
-        img.addEventListener('error', () => {
-            img.hidden = true;
-            if (empty) empty.hidden = false;
-        });
-        img.src = cfg.qrImage;
-    }
+    // Ảnh QR: xem loadDonateQr() — chỉ tải lúc mở hộp thoại, không tải khi vào trang
 
     // Thông tin chuyển khoản — chỉ hiện dòng nào có dữ liệu
     if (info) {
@@ -399,6 +406,255 @@ function initDonate() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && document.body.classList.contains('donate-open')) openDonate(false);
     });
+}
+
+/* ====================================================================
+   0.9 BANNER AUDIO VISUALIZER (dải banner phản ứng theo nhạc đang phát)
+   ==================================================================== */
+function initBannerVisualizer() {
+    const banner = document.getElementById('card-banner');
+    const audio = document.getElementById('bg-audio');
+    if (!banner || !audio) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'banner-visualizer';
+    canvas.setAttribute('aria-hidden', 'true');
+    banner.insertBefore(canvas, banner.firstChild);
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { canvas.remove(); return; }
+
+    const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0;
+
+    /* --- Đồ thị âm thanh, dựng theo cách an toàn nhất ---
+       source -> destination TRƯỚC (bảo đảm vẫn còn tiếng), rồi source -> analyser.
+       Analyser chỉ ĐỌC dữ liệu nên không cần nối ra destination — nhờ vậy nó không
+       nằm trên đường tiếng và không thể làm hỏng âm thanh.
+       Nếu trình duyệt/tiện ích đã tạo MediaElementSource cho thẻ này rồi thì
+       createMediaElementSource sẽ báo lỗi -> bỏ hiệu ứng, nhạc vẫn chạy bình thường. */
+    let audioCtx = null;
+    let analyser = null;
+    let bins = null;
+    let graphFailed = false;
+
+    function ensureGraph() {
+        if (analyser || graphFailed) return !!analyser;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { graphFailed = true; return false; }
+        try {
+            audioCtx = new AC();
+            const source = audioCtx.createMediaElementSource(audio);
+            source.connect(audioCtx.destination);
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 1024;
+            analyser.smoothingTimeConstant = 0.82;
+            source.connect(analyser);
+            bins = new Uint8Array(analyser.frequencyBinCount);
+            if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+            return true;
+        } catch (e) {
+            console.warn('Banner visualizer: không dựng được đồ thị âm thanh, bỏ hiệu ứng', e);
+            analyser = null;
+            bins = null;
+            graphFailed = true;
+            return false;
+        }
+    }
+
+    function resumeCtx() {
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    }
+
+    function resize() {
+        W = canvas.clientWidth;
+        H = canvas.clientHeight;
+        if (!W || !H) return;
+        canvas.width = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(banner);
+
+    /* --- Vẽ ---
+       Tâm dải sáng đặt ở 40% chiều cao banner vì phần dưới bị .banner-gradient
+       phủ tối 90–100% (nửa dưới mờ dần như ảnh phản chiếu, trông vẫn đẹp). */
+    const BARS = 64;
+    const levels = new Float32Array(BARS);
+    const CY_RATIO = 0.40;
+    const MAX_AMP = 0.30;
+    const GAP = 2;
+    // Đường cong làm nổi đỉnh (nhạc nhiều năng lượng ở dải thấp).
+    const CURVE = 1.2;
+    // Tự động khuếch đại: bám theo đỉnh mạnh nhất gần đây rồi lấy làm mốc 100%,
+    // nhờ vậy bài nhạc to hay nhỏ đều cho dáng equalizer đẹp như nhau.
+    const AGC_FLOOR = 55;          // sàn: đoạn im lặng không bị khuếch đại tạp âm
+    const raw = new Float32Array(BARS);
+    let agcPeak = 120;
+
+    function roundRect(c, x, y, w, h, r) {
+        if (c.roundRect) { c.beginPath(); c.roundRect(x, y, w, h, r); return; }
+        r = Math.min(r, w / 2, h / 2);
+        c.beginPath();
+        c.moveTo(x + r, y);
+        c.arcTo(x + w, y, x + w, y + h, r);
+        c.arcTo(x + w, y + h, x, y + h, r);
+        c.arcTo(x, y + h, x, y, r);
+        c.arcTo(x, y, x + w, y, r);
+        c.closePath();
+    }
+
+    let grad = null;
+    let gradForW = -1;
+
+    function sampleBars() {
+        const n = bins.length;
+        const usable = Math.max(8, Math.floor(n * 0.62)); // bỏ dải cao tần rất yếu
+        let frameMax = 0;
+
+        for (let i = 0; i < BARS; i++) {
+            const t0 = Math.floor(Math.pow(i / BARS, 1.7) * usable);
+            const t1 = Math.max(t0 + 1, Math.floor(Math.pow((i + 1) / BARS, 1.7) * usable));
+            let m = 0;
+            for (let k = t0; k < t1 && k < n; k++) if (bins[k] > m) m = bins[k];
+            raw[i] = m;
+            if (m > frameMax) frameMax = m;
+        }
+
+        // lên nhanh, xuống rất chậm -> mốc 100% bám sát độ to thật của bài
+        if (frameMax > agcPeak) agcPeak += (frameMax - agcPeak) * 0.5;
+        else agcPeak += (frameMax - agcPeak) * 0.015;
+        const gain = Math.max(agcPeak, AGC_FLOOR);
+
+        for (let i = 0; i < BARS; i++) {
+            const v = Math.min(1, raw[i] / gain);
+            // làm mượt để cột không giật
+            levels[i] += (Math.pow(v, CURVE) - levels[i]) * 0.35;
+        }
+    }
+
+    function drawSpectrum() {
+        if (!W || !H) return;
+        ctx.clearRect(0, 0, W, H);
+        const cy = H * CY_RATIO;
+        const amp = H * MAX_AMP;
+        const barW = Math.max(1, (W - GAP * (BARS - 1)) / BARS);
+
+        if (gradForW !== W) {
+            grad = ctx.createLinearGradient(0, 0, W, 0);
+            grad.addColorStop(0, '#ff6b9d');
+            grad.addColorStop(0.45, '#ff8fb8');
+            grad.addColorStop(0.75, '#c084fc');
+            grad.addColorStop(1, '#a855f7');
+            gradForW = W;
+        }
+
+        // hai lượt: quầng mờ trước, cột nét sau
+        for (let pass = 0; pass < 2; pass++) {
+            const halo = pass === 0;
+            ctx.fillStyle = grad;
+            for (let i = 0; i < BARS; i++) {
+                // mờ dần ở hai đầu để không đụng badge góc phải
+                const fade = Math.min(1, Math.min(i, BARS - 1 - i) / (BARS * 0.18));
+                const v = levels[i] * fade;
+                const h = Math.max(1.2, v * amp);
+                const x = i * (barW + GAP);
+                ctx.globalAlpha = halo ? 0.14 : 0.5 + v * 0.5;
+                roundRect(ctx, x, cy - h, barW, h * 2, Math.min(barW / 2, 2.5));
+                ctx.fill();
+            }
+        }
+
+        // đường tâm mờ
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = '#ffd1e3';
+        ctx.fillRect(0, cy - 0.5, W, 1);
+        ctx.globalAlpha = 1;
+    }
+
+    // Khi nhạc dừng: một đường sóng TĨNH, êm — vừa là dấu hiệu "đang tạm dừng",
+    // vừa không tốn CPU vì vòng lặp vẽ đã dừng hẳn (chỉ vẽ lại 1 lần).
+    function drawIdle() {
+        if (!W || !H) return;
+        ctx.clearRect(0, 0, W, H);
+        const cy = H * CY_RATIO;
+        ctx.strokeStyle = 'rgba(255, 143, 184, 0.26)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        for (let x = 0; x <= W; x += 5) {
+            const fade = Math.min(1, Math.min(x, W - x) / (W * 0.16));
+            const y = cy + Math.sin(x * 0.011) * H * 0.07 * fade;
+            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    function drawStatic() {
+        // Bản tĩnh cho người bật "giảm chuyển động"
+        if (!W || !H) return;
+        ctx.clearRect(0, 0, W, H);
+        const cy = H * CY_RATIO;
+        const g = ctx.createLinearGradient(0, 0, W, 0);
+        g.addColorStop(0, 'rgba(255, 107, 157, 0.45)');
+        g.addColorStop(0.5, 'rgba(255, 143, 184, 0.55)');
+        g.addColorStop(1, 'rgba(168, 85, 247, 0.4)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, cy - 1.5, W, 3);
+    }
+
+    let rafId = null;
+    let running = false;
+
+    function frame() {
+        if (analyser) { analyser.getByteFrequencyData(bins); sampleBars(); drawSpectrum(); }
+        else drawIdle();
+        rafId = requestAnimationFrame(frame);
+    }
+
+    function start() {
+        if (reduceMotion) { drawStatic(); return; }
+        if (running || document.hidden) return;
+        running = true;
+        rafId = requestAnimationFrame(frame);
+    }
+
+    function stopToIdle() {
+        running = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
+        levels.fill(0);
+        if (reduceMotion) drawStatic(); else drawIdle();
+    }
+
+    // Nhạc chạy -> dựng đồ thị rồi vẽ; nhạc dừng -> về trạng thái thở nhẹ
+    audio.addEventListener('play', () => {
+        ensureGraph();
+        resumeCtx();
+        start();
+    });
+    audio.addEventListener('playing', () => {
+        resumeCtx();
+        start();
+    });
+    audio.addEventListener('pause', stopToIdle);
+    audio.addEventListener('ended', stopToIdle);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            running = false;
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = null;
+        } else if (!audio.paused) {
+            start();
+        }
+    });
+
+    if (audio.paused) { if (reduceMotion) drawStatic(); else drawIdle(); }
+    setTimeout(resize, 400);
+    setTimeout(resize, 1200);
 }
 
 /* ====================================================================
@@ -574,11 +830,26 @@ function initProfileUI() {
         });
     }
 
-    // Copy Link Button Event
+    // Nút chia sẻ / sao chép liên kết:
+    // - Điện thoại (con trỏ thô) + trình duyệt hỗ trợ -> mở bảng chia sẻ của hệ điều hành
+    // - Còn lại -> sao chép liên kết như cũ
     const copyLinkBtn = document.getElementById('copy-link-btn');
     if (copyLinkBtn) {
+        const isTouch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        const canShare = isTouch && typeof navigator.share === 'function';
+        const tipEl = copyLinkBtn.querySelector('.tooltip');
+        if (tipEl && canShare) tipEl.textContent = 'Chia sẻ';
+
         copyLinkBtn.addEventListener('click', () => {
             const link = window.location.href;
+            if (canShare) {
+                navigator.share({
+                    title: document.title,
+                    text: 'Ghé thăm không gian số của mình nhé',
+                    url: link
+                }).then(() => playBeepSound(680, 0.08)).catch(() => {});
+                return;
+            }
             navigator.clipboard.writeText(link).then(() => {
                 showToast('Đã sao chép liên kết trang');
                 playBeepSound(680, 0.08);
@@ -698,6 +969,7 @@ function initClickToEnter() {
         if (CONFIG.music && CONFIG.music.autoplayOnEnter) {
             const audio = document.getElementById('bg-audio');
             if (audio) {
+                ensureAudioSource();
                 audio.play().then(() => {
                     updateAudioWidgetState(true);
                     if (playlist.length > 0 && playlist[currentTrackIndex]) {
@@ -714,6 +986,16 @@ function initClickToEnter() {
    ==================================================================== */
 let currentTrackIndex = 0;
 let playlist = [];
+
+/* Gán src cho bài đang chọn — CHỈ gọi khi có người thật sự bấm nghe.
+   Thẻ audio để preload="none" và KHÔNG gán src lúc vào trang, nên khách xem bio
+   mà không bật nhạc thì không tải một byte nào của bài nhạc (trước đây tải 1.1MB). */
+function ensureAudioSource() {
+    const audio = document.getElementById('bg-audio');
+    if (!audio || !playlist.length || !playlist[currentTrackIndex]) return;
+    if (audio.getAttribute('src')) return;
+    audio.src = playlist[currentTrackIndex].url;
+}
 
 function initAudioController() {
     const audio = document.getElementById('bg-audio');
@@ -761,8 +1043,14 @@ function initAudioController() {
             audio.pause();
             audio.currentTime = 0;
         } catch (e) {}
-        audio.src = track.url;
-        audio.load();
+
+        // Chỉ nạp file nhạc khi thật sự chuẩn bị phát. Lúc mới vào trang chỉ cần
+        // đổi nhãn bài hát, nên gỡ src đi mà không nạp file nào.
+        audio.removeAttribute('src');
+        if (autoPlay) {
+            ensureAudioSource();
+            audio.load();
+        }
 
         if (trackTitle) {
             trackTitle.textContent = track.title;
@@ -809,6 +1097,7 @@ function initAudioController() {
         playBtn.addEventListener('click', () => {
             playBeepSound(520, 0.05);
             if (audio.paused) {
+                ensureAudioSource();
                 audio.play().then(() => {
                     updateAudioWidgetState(true);
                 }).catch(e => console.log('Audio playback error:', e));

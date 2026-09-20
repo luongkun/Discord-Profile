@@ -25,7 +25,7 @@ const CONFIG = {
         username: "chilanoidau",
         title: "Gamer • Music Lover • Coffee Addict",
         avatar: "https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256",
-        banner: "banner_executive.jpg",
+        banner: "banner_executive.webp",
         bio: "Just a normal guy who enjoys the simple things in life. Passionate about gaming, good music, and a perfect cup of coffee. Love traveling to new places, capturing moments, and binge-watching movies. Welcome to my little corner of the internet.",
         location: "Ninh Bình, Việt Nam",
         quotes: [
@@ -56,9 +56,9 @@ const CONFIG = {
             inviteUrl: "https://discord.gg/Mf2EHfNbMW",
             icon: "https://cdn.discordapp.com/icons/1267096791443312734/cd3ef9fd53d343c4c735e0640a6fb9c9.png?size=256",
             // Server này chưa có banner riêng nên dùng ảnh local làm ảnh nền dự phòng
-            banner: "profile_banner_cyber.jpg",
+            banner: "profile_banner_cyber.webp",
             cdnIcon: "https://cdn.discordapp.com/icons/1267096791443312734/cd3ef9fd53d343c4c735e0640a6fb9c9.png?size=256",
-            cdnBanner: "profile_banner_cyber.jpg",
+            cdnBanner: "profile_banner_cyber.webp",
             members: "47 Members",
             online: "19 Online",
             tag: "COMMUNITY",

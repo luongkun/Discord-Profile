@@ -4,12 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ProFile luongkun</title>
-    <meta name="description" content="Trang Bio cá nhân hiện đại của luongkun. Tích hợp theo dõi Discord Presence thời gian thực & cộng đồng Discord.">
-    <meta property="og:title" content="ProFile luongkun">
-    <meta property="og:description" content="Khám phá không gian số của luongkun.">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="https://cdn.discordapp.com/icons/1267096791443312734/cd3ef9fd53d343c4c735e0640a6fb9c9.png?size=256">
+    <meta name="description" content="Trang bio cá nhân của Nguyễn Lương: Discord presence thời gian thực, máy chủ đang tham gia, nhạc nền và khung ủng hộ.">
     <meta name="theme-color" content="#0a0a0a">
+
+    <!-- Thẻ chia sẻ (Facebook / Messenger / Discord / Zalo) — khi đổi domain nhớ sửa cả 5 dòng dưới.
+         Các thẻ này phải viết cứng trong HTML: bot của Facebook không chạy JavaScript. -->
+    <link rel="canonical" href="https://luongkun.pages.dev/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="luongkun">
+    <meta property="og:locale" content="vi_VN">
+    <meta property="og:url" content="https://luongkun.pages.dev/">
+    <meta property="og:title" content="Nguyễn Lương — ProFile luongkun">
+    <meta property="og:description" content="Ghé thăm không gian số của mình: Discord presence thời gian thực, nhạc nền và vài thứ dễ thương khác.">
+    <meta property="og:image" content="https://luongkun.pages.dev/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Thẻ giới thiệu Nguyễn Lương">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Nguyễn Lương — ProFile luongkun">
+    <meta name="twitter:description" content="Ghé thăm không gian số của mình: Discord presence thời gian thực, nhạc nền và vài thứ dễ thương khác.">
+    <meta name="twitter:image" content="https://luongkun.pages.dev/og-image.jpg">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,7 +44,7 @@
     <link rel="shortcut icon" href="favicon.ico?v=7.0">
 
     <!-- Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="style.css?v=9.5">
+    <link rel="stylesheet" href="style.css?v=10.2">
 </head>
 <body>
     <!-- Background Canvas for Particles -->
@@ -96,8 +110,9 @@
         </div>
     </div>
 
-    <!-- Audio Element -->
-    <audio id="bg-audio" preload="auto"></audio>
+    <!-- Audio Element — preload="none": KHÔNG tải bài nhạc 1.1MB khi mới vào trang.
+         Nhạc chỉ bắt đầu tải đúng lúc khách bấm vào màn chào (lúc đó mới gọi play()). -->
+    <audio id="bg-audio" preload="none"></audio>
 
     <!-- Floating Audio Control Widget -->
     <div class="audio-widget" id="audio-widget" title="Điều khiển nhạc nền">
@@ -151,7 +166,7 @@
                     <div class="profile-main-info">
                         <div class="avatar-wrapper" id="avatar-wrapper">
                             <img src="https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256" alt="Dương Trần Avatar" id="profile-avatar" class="profile-avatar">
-                            <img src="avatar_decoration.png" alt="" class="avatar-decoration" id="profile-avatar-decoration" aria-hidden="true">
+                            <img src="avatar_decoration.webp" alt="" class="avatar-decoration" id="profile-avatar-decoration" aria-hidden="true">
                             <div class="status-indicator" id="status-indicator" title="Discord Status">
                                 <span class="status-dot"></span>
                             </div>
@@ -494,7 +509,7 @@
     </div>
 
     <!-- Scripts with Cache Buster -->
-    <script src="config.js?v=9.4"></script>
-    <script src="script.js?v=9.4"></script>
+    <script src="config.js?v=10.2"></script>
+    <script src="script.js?v=10.2"></script>
 </body>
 </html>
