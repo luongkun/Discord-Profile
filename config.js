@@ -25,6 +25,8 @@ const CONFIG = {
         username: "chilanoidau",
         title: "Gamer • Music Lover • Coffee Addict",
         avatar: "https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256",
+        // Ảnh dự phòng local khi cdn.discordapp.com bị nhà mạng chặn (xảyra thật ở VN)
+        avatarLocal: "avatar-me.webp",
         banner: "banner_executive.webp",
         bio: "Just a normal guy who enjoys the simple things in life. Passionate about gaming, good music, and a perfect cup of coffee. Love traveling to new places, capturing moments, and binge-watching movies. Welcome to my little corner of the internet.",
         location: "Ninh Bình, Việt Nam",
@@ -99,6 +101,12 @@ const CONFIG = {
         // Avatar + khung đồng bộ từ Discord qua Lanyard (chỉ avatar & khung, tên giữ nguyên theo config)
         myDiscordId: "1222143238056574990",
         partnerDiscordId: "1507678870000893982",
+        // Ảnh dự phòng local cho avatar + khung của cả hai (CDN Discord bị chặn,
+        // hoặc Lanyard sập mà chưa có cache trong trình duyệt khách)
+        localVisuals: {
+            "1222143238056574990": { avatar: "avatar-me.webp", deco: "deco-me.webp" },
+            "1507678870000893982": { avatar: "avatar-partner.webp", deco: null }
+        },
         // Ngày bắt đầu yêu — 115 ngày tính đến 19/09/2026
         startDate: "2026-05-27",
         // Lời nhắn yêu thương — bấm vào câu chữ ở panel để đổi qua lại

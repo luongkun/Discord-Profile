@@ -16,7 +16,77 @@ document.addEventListener('DOMContentLoaded', () => {
     initSetlove();
     initDonate();
     initBannerVisualizer();
+    // Nối chuỗi dự phòng cho mọi ảnh đang trỏ thẳng CDN Discord (khi trang vừa mở)
+    applyGlobalAvatarFallbacks(LOCAL_AVATAR_FALLBACK);
+
+    // PWA: đăng ký service worker (file riêng — CSP chỉ cho phép script cùng nguồn)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
 });
+
+/* ====================================================================
+   0.3 CACHE DISCORD VISUALS — dự phòng khi Lanyard/CDN Discord chết
+   ====================================================================
+   Chỉ cache AVATAR + KHUNG (thứ ít đổi, thuộc về "danh tính").
+   KHÔNG cache trạng thái online/nhạc — thứ đó phải luôn trung thực. */
+const VISUALS_CACHE_KEY = 'discord-visuals-cache-v1';
+
+function loadVisualCache() {
+    try {
+        return JSON.parse(localStorage.getItem(VISUALS_CACHE_KEY)) || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveVisualCache(userId, avatarUrl, decoUrl, avatarLocal, decoLocal) {
+    if (!userId || !avatarUrl) return;
+    try {
+        const all = loadVisualCache();
+        all[userId] = { avatar: avatarUrl, deco: decoUrl || null, avatarLocal: avatarLocal || null, decoLocal: decoLocal || null, at: Date.now() };
+        localStorage.setItem(VISUALS_CACHE_KEY, JSON.stringify(all));
+    } catch (e) { /* localStorage đầy / chế độ riêng tư — bỏ qua */ }
+}
+
+// Ảnh CDN Discord -> cùng file qua media.discordapp.net (proxy dự phòng)
+function cdnFallbackUrls(url) {
+    if (!url) return [];
+    const urls = [url];
+    if (url.includes('cdn.discordapp.com')) {
+        urls.push(url.replace('cdn.discordapp.com', 'media.discordapp.net'));
+    }
+    return urls;
+}
+
+// Gắn ảnh theo CHUỖI dự phòng: CDN -> media -> file local. Ảnh hết vỡ khi bị chặn.
+function setImgWithFallback(imgEl, primaryUrl, localFile) {
+    if (!imgEl) return;
+    const chain = [...cdnFallbackUrls(primaryUrl), localFile].filter(Boolean);
+    let i = 0;
+    imgEl.onerror = () => {
+        i += 1;
+        if (i < chain.length) {
+            imgEl.src = chain[i];
+        } else {
+            imgEl.onerror = null; // hết chuỗi, dừng để không lặp vô hạn
+        }
+    };
+    imgEl.src = chain[0];
+}
+
+// Ảnh <img> trỏ thẳng CDN Discord (avatar trong config, avatar màn chào...)
+// đều được nối chuỗi dự phòng ngay khi mở trang.
+function applyGlobalAvatarFallbacks(localAvatarFile) {
+    document.querySelectorAll('img[src*="cdn.discordapp.com"]').forEach(img => {
+        if (img.dataset.fallbackBound) return; // tránh gắn 2 lần
+        img.dataset.fallbackBound = '1';
+        setImgWithFallback(img, img.src, localAvatarFile);
+    });
+}
+
+// Avatar dự phòng của bản thân (khai báo trong config.js -> profile.avatarLocal)
+const LOCAL_AVATAR_FALLBACK = (typeof CONFIG !== 'undefined' && CONFIG.profile && CONFIG.profile.avatarLocal) || null;
 
 /* ====================================================================
    0.5 SETLOVE SLIDE PANEL (tên + trái tim + đếm ngày yêu)
@@ -51,6 +121,52 @@ function initSetlove() {
     // Đồng bộ avatar + khung từ Discord qua Lanyard (chỉ avatar & khung, không lấy tên)
     const LANYARD_API = 'https://api.lanyard.rest/v1/users/';
     const CDN = 'https://cdn.discordapp.com/';
+    // Ảnh dự phòng local (khai báo trong config.js -> setlove.localVisuals):
+    // dùng khi cdn.discordapp.com bị nhà mạng chặn
+    const LOCAL_VISUALS = (CONFIG.setlove && CONFIG.setlove.localVisuals) || {};
+
+    // Khôi phục avatar + khung từ cache (khi Lanyard/CDN chưa trả lời hoặc đã chết)
+    function applyCachedVisuals(ids, cached) {
+        if (!cached) return;
+        const avatarImg = document.getElementById(ids.avatar);
+        const decoImg = document.getElementById(ids.deco);
+        const fallback = document.getElementById(ids.fallback);
+        if (avatarImg && cached.avatar) {
+            setImgWithFallback(avatarImg, cached.avatar, cached.avatarLocal);
+            avatarImg.hidden = false;
+            if (fallback) fallback.hidden = true;
+        }
+        if (decoImg) {
+            if (cached.deco) {
+                setImgWithFallback(decoImg, cached.deco, cached.decoLocal);
+                decoImg.hidden = false;
+            } else {
+                decoImg.hidden = true;
+            }
+        }
+    }
+
+    // Dòng nhỏ "cập nhật X trước" — CHỈ hiện khi cache đã cũ (≥ 5 phút);
+    // dữ liệu tươi thì không có gì thay đổi trên giao diện
+    function showVisualAge(fetchedAt, nameId) {
+        const nameEl = document.getElementById(nameId);
+        if (!nameEl || !fetchedAt) return;
+        const mins = Math.round((Date.now() - fetchedAt) / 60000);
+        if (mins < 5) return;
+        let label;
+        if (mins < 60) label = `${mins} phút trước`;
+        else if (mins < 1440) label = `${Math.floor(mins / 60)} giờ trước`;
+        else label = `${Math.floor(mins / 1440)} ngày trước`;
+        const person = nameEl.closest('.setlove-person');
+        if (!person) return;
+        let el = person.querySelector('.visual-age');
+        if (!el) {
+            el = document.createElement('span');
+            el.className = 'visual-age';
+            person.appendChild(el);
+        }
+        el.textContent = `cập nhật ${label}`;
+    }
 
     function applyDiscordVisuals(ids, user) {
         if (!user) return;
@@ -60,19 +176,36 @@ function initSetlove() {
 
         if (avatarImg && user.avatar) {
             const ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
-            avatarImg.src = `${CDN}avatars/${user.id}/${user.avatar}.${ext}?size=256`;
+            const local = LOCAL_VISUALS[user.id];
+            // Chuỗi dự phòng: CDN -> media.discordapp.net -> file local (khi bị chặn)
+            setImgWithFallback(avatarImg, `${CDN}avatars/${user.id}/${user.avatar}.${ext}?size=256`, local ? local.avatar : null);
             avatarImg.hidden = false;
             if (fallback) fallback.hidden = true;
         }
 
+        let decoUrl = null;
         if (decoImg) {
             const decoAsset = user.avatar_decoration_data && user.avatar_decoration_data.asset;
             if (decoAsset) {
-                decoImg.src = `${CDN}avatar-decoration-presets/${decoAsset}.png`;
+                decoUrl = `${CDN}avatar-decoration-presets/${decoAsset}.png`;
+                setImgWithFallback(decoImg, decoUrl, LOCAL_VISUALS[user.id] ? LOCAL_VISUALS[user.id].deco : null);
                 decoImg.hidden = false;
             } else {
                 decoImg.hidden = true;
             }
+        }
+
+        // Lưu cache: lần sau Lanyard/CDN chết vẫn còn avatar + khung để hiện
+        if (user.id && avatarImg && avatarImg.src) {
+            const local = LOCAL_VISUALS[user.id];
+            saveVisualCache(user.id, avatarImg.src, decoUrl, local ? local.avatar : null, local ? local.deco : null);
+        }
+
+        // Dữ liệu tươi đã tới: gỡ dòng "cập nhật X trước" (nếu có)
+        const person = avatarImg && avatarImg.closest('.setlove-person');
+        if (person) {
+            const ageEl = person.querySelector('.visual-age');
+            if (ageEl) ageEl.remove();
         }
     }
 
@@ -95,9 +228,42 @@ function initSetlove() {
 
     const myIds = { avatar: 'setlove-my-avatar', deco: 'setlove-my-deco', fallback: 'setlove-my-fallback' };
     const partnerIds = { avatar: 'setlove-partner-avatar', deco: 'setlove-partner-deco', fallback: 'setlove-partner-fallback' };
+
+    // KHÔI PHỤC TỪ CACHE TRƯỚC KHI GỌI LANYARD: nếu Lanyard chết thì avatar + khung
+    // vẫn hiện như bình thường (kèm dòng "cập nhật X trước" nếu cache đã cũ)
+    const visualCache = loadVisualCache();
+    [[myIds, cfg.myDiscordId, 'setlove-my-name'], [partnerIds, cfg.partnerDiscordId, 'setlove-partner-name']].forEach(([ids, uid, nameId]) => {
+        const cached = visualCache[uid];
+        if (cached) {
+            applyCachedVisuals(ids, cached);
+            showVisualAge(cached.at, nameId);
+        }
+    });
+
     loadDiscordVisuals(myIds, cfg.myDiscordId);
     // Người yêu: retry mỗi 60s đến khi Lanyard nhận được dữ liệu
     loadDiscordVisuals(partnerIds, cfg.partnerDiscordId, 60000);
+
+    // Hook kiểm thử (chỉ chạy khi URL có ?debug): mô phỏng Lanyard chết —
+    // khôi phục đúng đường cache như lúc mở trang thật
+    if (new URLSearchParams(location.search).has('debug')) {
+        window.__debugRestoreSetlove = (ageMinutes) => {
+            const c = loadVisualCache();
+            [[myIds, cfg.myDiscordId, 'setlove-my-name'], [partnerIds, cfg.partnerDiscordId, 'setlove-partner-name']].forEach(([ids, uid, nameId]) => {
+                const cached = c[uid];
+                if (!cached) return;
+                cached.at = ageMinutes > 0 ? Date.now() - ageMinutes * 60000 : Date.now();
+                applyCachedVisuals(ids, cached);
+                if (ageMinutes > 0) showVisualAge(cached.at, nameId);
+            });
+            return {
+                my: document.getElementById('setlove-my-avatar').naturalWidth,
+                partner: document.getElementById('setlove-partner-avatar').naturalWidth,
+                deco: document.getElementById('setlove-my-deco').naturalWidth,
+                labels: [...document.querySelectorAll('.visual-age')].map(e => e.textContent)
+            };
+        };
+    }
 
     // Đếm ngày/giờ/phút/giây yêu nhau — cập nhật mỗi giây
     const start = cfg.startDate ? new Date(cfg.startDate + 'T00:00:00+07:00') : null;
@@ -1758,9 +1924,9 @@ function updateDiscordPresenceUI(data) {
 
     if (liveAvatarUrl) {
         const avatarEl = document.getElementById('profile-avatar');
-        if (avatarEl) avatarEl.src = liveAvatarUrl;
+        if (avatarEl) setImgWithFallback(avatarEl, liveAvatarUrl, LOCAL_AVATAR_FALLBACK);
         const enterAvatarEl = document.querySelector('.cute-avatar-img, .enter-avatar-img');
-        if (enterAvatarEl) enterAvatarEl.src = liveAvatarUrl;
+        if (enterAvatarEl) setImgWithFallback(enterAvatarEl, liveAvatarUrl, LOCAL_AVATAR_FALLBACK);
     }
 
     // Avatar decoration (live from Discord)
@@ -1770,12 +1936,19 @@ function updateDiscordPresenceUI(data) {
     document.querySelectorAll('.avatar-decoration').forEach(el => {
         if (decorationAsset) {
             const url = `https://cdn.discordapp.com/avatar-decoration-presets/${decorationAsset}.png`;
-            if (el.getAttribute('src') !== url) el.src = url;
+            if (el.getAttribute('src') !== url) setImgWithFallback(el, url, 'deco-me.webp');
             el.style.display = '';
         } else {
             el.style.display = 'none';
         }
     });
+
+    // Lưu cache avatar + khung của bản thân (dùng cho lần Lanyard/CDN chết)
+    if (liveAvatarUrl) {
+        saveVisualCache(CONFIG.discordId, liveAvatarUrl,
+            decorationAsset ? `https://cdn.discordapp.com/avatar-decoration-presets/${decorationAsset}.png` : null,
+            LOCAL_AVATAR_FALLBACK, 'deco-me.webp');
+    }
 
     // 1b. Đồng bộ TÊN HIỂN THỊ + USERNAME theo tài khoản Discord
     // Thứ tự ưu tiên: global_name (tên hiển thị) > display_name > username

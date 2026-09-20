@@ -1,0 +1,45 @@
+/*
+ * Header bảo mật + cache cho Cloudflare Pages.
+ * Cloudflare Pages tự áp file này — không cần cấu hình gì trong dashboard.
+ */
+
+# --------------------------------------------------------------- bảo mật
+/*
+ * CSP: tự cho phép đúng những gì trang dùng.
+ * Lưu ý khi bảo trì:
+ *  - thêm domain vào img-src nếu sau này nạp ảnh từ nguồn mới
+ *  - style-src 'unsafe-inline' là bắt buộc: 404.html và vài chỗ nhỏ dùng inline style
+ *  - script chỉ được từ chính site ('self') — không ai có thể chèn JS ngoài vào
+ */
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://cdn.discordapp.com https://media.discordapp.net https://images.unsplash.com https://i.scdn.co; connect-src 'self' https://api.lanyard.rest wss://api.lanyard.rest; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+/*
+
+# --------------------------------------------------------------- cache
+# Ảnh có version trên query string (?v=...) — cache dài rồi để query làm phá cache
+/img-*.png
+  Cache-Control: public, max-age=31536000, immutable
+/icon-192.png
+  Cache-Control: public, max-age=31536000, immutable
+/icon-512.png
+  Cache-Control: public, max-age=31536000, immutable
+# Ảnh QR + ảnh dự phòng: đổi không thường xuyên nhưng phải thấy ngay khi đổi
+/qr-bank.png
+  Cache-Control: public, max-age=86400
+/avatar-me.webp
+  Cache-Control: public, max-age=86400
+/avatar-partner.webp
+  Cache-Control: public, max-age=86400
+/deco-me.webp
+  Cache-Control: public, max-age=86400
+# HTML luôn fetch mới (trang có presence realtime)
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/404.html
+  Cache-Control: public, max-age=0, must-revalidate

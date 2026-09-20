@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /bai1.mp3
+Disallow: /qr-bank.png
+
+Sitemap: https://luongkun.pages.dev/sitemap.xml

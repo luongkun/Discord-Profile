@@ -2185,6 +2185,17 @@ body.love-open .main-viewport {
     filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
 }
 
+/* Dòng nhỏ "cập nhật X trước" — chỉ hiện khi dữ liệu từ cache đã cũ (≥5 phút) */
+.visual-age {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: rgba(255, 209, 227, 0.55);
+    letter-spacing: 0.3px;
+    margin-top: 4px;
+    font-style: italic;
+}
+
 .setlove-name {
     font-family: var(--font-heading);
     font-size: clamp(1.5rem, 4vw, 2.3rem);
