@@ -72,8 +72,24 @@ const CONFIG = {
         { name: "Facebook", icon: "fa-brands fa-facebook", url: "https://www.facebook.com/nlwos" },
         { name: "Email", icon: "fa-solid fa-envelope", url: "", copy: "lucifermeta0210@gmail.com" },
         { name: "TikTok", icon: "fa-brands fa-tiktok", url: "https://www.tiktok.com/@nlwo2" },
-        { name: "Spotify", icon: "fa-brands fa-spotify", url: "https://open.spotify.com/user/31qttkds2lxweu7s5qxqrms2ab2i?si=d5a2f7b40b2e412f" }
+        { name: "Spotify", icon: "fa-brands fa-spotify", url: "https://open.spotify.com/user/31qttkds2lxweu7s5qxqrms2ab2i?si=d5a2f7b40b2e412f" },
+        // Mục có action: "donate" KHÔNG mở link — bấm là hiện ảnh QR ở giữa màn hình.
+        // highlight: true -> nút nổi bật, chiếm trọn một hàng (xem mục `donate` bên dưới)
+        { name: "Donate", icon: "fa-solid fa-qrcode", action: "donate", highlight: true }
     ],
+
+    // 4.2 ỦNG HỘ (DONATE) — bấm nút Donate sẽ hiện ảnh QR ngân hàng giữa màn hình
+    donate: {
+        // Tên file ảnh QR, đặt cùng thư mục với index.html.
+        // Khi chưa có file, hộp thoại hiện khung hướng dẫn thay vì ảnh vỡ.
+        // Chỉ cần đặt ảnh vào repo với đúng tên này là QR tự hiện, không phải sửa code.
+        qrImage: "qr-bank.png",
+        // Thông tin chuyển khoản — dòng nào để trống "" thì tự ẩn
+        bankName: "",
+        accountName: "",
+        accountNumber: "",
+        note: ""
+    },
 
     // 4.1 MÀN "SETLOVE" (trượt từ phải sang):
     //     tên tạm + ngày tạm — nhớ sửa lại cho đúng nhé!

@@ -30,7 +30,7 @@
     <link rel="shortcut icon" href="favicon.ico?v=7.0">
 
     <!-- Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="style.css?v=8.0">
+    <link rel="stylesheet" href="style.css?v=9.5">
 </head>
 <body>
     <!-- Background Canvas for Particles -->
@@ -359,16 +359,31 @@
 
                 <!-- Setlove Slide Panel (trượt từ phải sang) -->
                 <div class="setlove-panel" id="setlove-panel" aria-hidden="true">
+                    <!-- Nền mesh gradient động: 3 khối sáng mờ trôi lệch pha nhau -->
+                    <div class="love-mesh" aria-hidden="true">
+                        <span class="mesh-blob mb-1"></span>
+                        <span class="mesh-blob mb-2"></span>
+                        <span class="mesh-blob mb-3"></span>
+                    </div>
+
                     <!-- Canvas trái tim bay (nền động) -->
                     <canvas class="love-canvas" id="love-canvas" aria-hidden="true"></canvas>
+
+                    <!-- Lớp hạt nhiễu (grain) + vignette tối 4 góc -->
+                    <div class="love-grain" aria-hidden="true"></div>
+                    <div class="love-vignette" aria-hidden="true"></div>
                     <div class="setlove-inner">
                         <div class="setlove-decor" aria-hidden="true">
                             <span>💗</span><span>🌸</span><span>✨</span><span>💗</span><span>🌸</span>
                         </div>
 
                         <div class="setlove-names">
-                            <div class="setlove-person">
+                            <!-- Sợi chỉ đỏ nối hai người (vẽ dần khi mở panel) -->
+                            <div class="love-thread" aria-hidden="true"></div>
+
+                            <div class="setlove-person setlove-person-a">
                                 <div class="setlove-avatar-wrap">
+                                    <span class="avatar-ring" aria-hidden="true"></span>
                                     <span class="setlove-avatar-fallback" id="setlove-my-fallback">L</span>
                                     <img class="setlove-avatar" id="setlove-my-avatar" alt="Avatar của Lương" hidden>
                                     <img class="setlove-avatar-decoration" id="setlove-my-deco" alt="" aria-hidden="true" hidden>
@@ -380,8 +395,9 @@
                                 <i class="fa-solid fa-heart setlove-heart" id="setlove-heart"></i>
                             </span>
 
-                            <div class="setlove-person">
+                            <div class="setlove-person setlove-person-b">
                                 <div class="setlove-avatar-wrap">
+                                    <span class="avatar-ring" aria-hidden="true"></span>
                                     <span class="setlove-avatar-fallback" id="setlove-partner-fallback">T</span>
                                     <img class="setlove-avatar" id="setlove-partner-avatar" alt="Avatar của Tuyết Anh" hidden>
                                     <img class="setlove-avatar-decoration" id="setlove-partner-deco" alt="" aria-hidden="true" hidden>
@@ -449,8 +465,36 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Donate QR Modal (thẳng con của <body> để `position: fixed` neo đúng màn hình) -->
+    <div class="donate-modal" id="donate-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Ủng hộ tác giả">
+        <div class="donate-backdrop" id="donate-backdrop"></div>
+        <div class="donate-card">
+            <button class="donate-close" id="donate-close" aria-label="Đóng" title="Đóng (ESC)">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="donate-head">
+                <i class="fa-solid fa-qrcode"></i>
+                <span>ỦNG HỘ • DONATE</span>
+            </div>
+
+            <div class="donate-qr-wrap">
+                <img class="donate-qr" id="donate-qr" alt="Mã QR chuyển khoản" hidden>
+                <div class="donate-qr-empty" id="donate-qr-empty">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Chưa có ảnh QR</span>
+                    <small>Đặt ảnh vào repo và ghi tên file vào <code>config.js</code> → <code>donate.qrImage</code></small>
+                </div>
+            </div>
+
+            <div class="donate-info" id="donate-info" hidden></div>
+
+            <p class="donate-thanks">Cảm ơn bạn đã ủng hộ 💗</p>
+        </div>
+    </div>
+
     <!-- Scripts with Cache Buster -->
-    <script src="config.js?v=8.9"></script>
-    <script src="script.js?v=8.9"></script>
+    <script src="config.js?v=9.4"></script>
+    <script src="script.js?v=9.4"></script>
 </body>
 </html>

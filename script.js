@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initLocalClock();
     initGreeting();
     initSetlove();
+    initDonate();
 });
 
 /* ====================================================================
@@ -347,6 +348,60 @@ function initSetlove() {
 }
 
 /* ====================================================================
+   0.8 DONATE QR MODAL (bấm nút Donate -> hiện ảnh QR giữa màn hình)
+   ==================================================================== */
+function openDonate(open) {
+    const modal = document.getElementById('donate-modal');
+    if (!modal) return;
+    const willOpen = open !== undefined ? open : !document.body.classList.contains('donate-open');
+    document.body.classList.toggle('donate-open', willOpen);
+    modal.setAttribute('aria-hidden', String(!willOpen));
+}
+
+function initDonate() {
+    const modal = document.getElementById('donate-modal');
+    if (!modal) return;
+
+    const backdrop = document.getElementById('donate-backdrop');
+    const closeBtn = document.getElementById('donate-close');
+    const img = document.getElementById('donate-qr');
+    const empty = document.getElementById('donate-qr-empty');
+    const info = document.getElementById('donate-info');
+    const cfg = CONFIG.donate || {};
+
+    // Ảnh QR: file chưa có thì giữ khung hướng dẫn (không hiện ảnh vỡ)
+    if (img && cfg.qrImage) {
+        img.addEventListener('load', () => {
+            img.hidden = false;
+            if (empty) empty.hidden = true;
+        });
+        img.addEventListener('error', () => {
+            img.hidden = true;
+            if (empty) empty.hidden = false;
+        });
+        img.src = cfg.qrImage;
+    }
+
+    // Thông tin chuyển khoản — chỉ hiện dòng nào có dữ liệu
+    if (info) {
+        const rows = [
+            ['Ngân hàng', cfg.bankName],
+            ['Chủ tài khoản', cfg.accountName],
+            ['Số tài khoản', cfg.accountNumber],
+            ['Nội dung', cfg.note]
+        ].filter(r => r[1]);
+        info.innerHTML = rows.map(([k, v]) => `<div class="donate-row"><span>${k}</span><b>${v}</b></div>`).join('');
+        info.hidden = rows.length === 0;
+    }
+
+    if (backdrop) backdrop.addEventListener('click', () => openDonate(false));
+    if (closeBtn) closeBtn.addEventListener('click', () => openDonate(false));
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.body.classList.contains('donate-open')) openDonate(false);
+    });
+}
+
+/* ====================================================================
    1. PROFILE UI INITIALIZATION FROM CONFIG
    ==================================================================== */
 function initProfileUI() {
@@ -454,11 +509,21 @@ function initProfileUI() {
         socialsList.innerHTML = '';
         CONFIG.socials.forEach(soc => {
             const a = document.createElement('a');
-            a.className = 'social-pill';
+            a.className = soc.highlight ? 'social-pill highlight' : 'social-pill';
             a.href = soc.url || '#';
             a.target = soc.url ? '_blank' : null;
             a.rel = 'noopener noreferrer';
             a.innerHTML = `<i class="${soc.icon}"></i> <span>${soc.name}</span>`;
+
+            if (soc.action === 'donate') {
+                // Mở hộp thoại ảnh QR thay vì điều hướng
+                a.title = 'Ủng hộ tác giả — mở mã QR';
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    playBeepSound(560, 0.08);
+                    openDonate(true);
+                });
+            }
 
             if (soc.copy) {
                 // Mục copy (vd Email): chặn điều hướng, sao chép vào clipboard + toast
