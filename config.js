@@ -133,6 +133,21 @@ const CONFIG = {
                 title: "Mưa Đợi Chờ",
                 artist: "Nguyễn Lương",
                 url: "bai1.mp3"
+            },
+            {
+                title: "Tháng 12 Anh Có",
+                artist: "Nguyễn Lương",
+                url: "thang12-anh-co.mp3"
+            },
+            {
+                title: "Thất Tình",
+                artist: "Nguyễn Lương",
+                url: "that-tinh.mp3"
+            },
+            {
+                title: "Chàng Trai Bất Tử",
+                artist: "Nguyễn Lương",
+                url: "chang-trai-bat-tu.mp3"
             }
         ],
         // Default / Initial Track Fallback

@@ -354,7 +354,11 @@ function initSetlove() {
             arrow.style.height = '';
         }
     }
-    positionArrow();
+    // Đặt vị trí nút SAU khung hình đầu tiên. Đo layout (offsetLeft/offsetWidth) ngay
+    // trong khối khởi động buộc trình duyệt tính lại TOÀN TRANG đúng lúc đang vẽ trang
+    // đầu tiên — đo được ~48ms khựng. Nút trái tim nằm sau màn chào (che kín màn hình)
+    // nên lùi lại 1 khung hình là không ai nhìn thấy.
+    requestAnimationFrame(() => requestAnimationFrame(positionArrow));
 
     // Khi panel trượt xong (mở hoặc đóng): đo vị trí thật của panel và đặt nút cách mép trái panel 20px
     panel.addEventListener('transitionend', (e) => {
@@ -377,7 +381,14 @@ function initSetlove() {
     window.addEventListener('load', positionArrow);
     setTimeout(positionArrow, 400);
     setTimeout(positionArrow, 1200);
-    if (window.ResizeObserver) new ResizeObserver(positionArrow).observe(document.body);
+    // Gộp các lần báo cùng lúc vào MỘT khung hình: positionArrow() vừa đọc vừa ghi style,
+    // gọi dồn dập sẽ bắt trình duyệt tính lại layout nhiều lần liên tiếp.
+    let arrowRafId = null;
+    const schedulePositionArrow = () => {
+        if (arrowRafId !== null) return;
+        arrowRafId = requestAnimationFrame(() => { arrowRafId = null; positionArrow(); });
+    };
+    if (window.ResizeObserver) new ResizeObserver(schedulePositionArrow).observe(document.body);
 
     // Câu nói yêu thương — tự động đổi qua lại (vẫn giữ hiệu ứng khi đổi)
     const quoteEl = document.getElementById('setlove-quote');
@@ -637,11 +648,28 @@ function initBannerVisualizer() {
         W = canvas.clientWidth;
         H = canvas.clientHeight;
         if (!W || !H) return;
-        canvas.width = Math.round(W * DPR);
-        canvas.height = Math.round(H * DPR);
+        const pxW = Math.round(W * DPR);
+        const pxH = Math.round(H * DPR);
+        // Trùng kích thước: ghi lại như cũ vừa XOÁ canvas vừa đánh dấu layout "bẩn",
+        // mà có 3 nơi gọi resize (khởi động, resize cửa sổ, ResizeObserver).
+        // Ở đây chỉ xoá đúng phần bitmap: HÌNH ẢNH Y NHƯ TRƯỚC (bản gốc cũng bị xoá ở
+        // mốc 400ms/1200ms) nhưng không phải tính lại layout toàn trang.
+        if (canvas.width === pxW && canvas.height === pxH) {
+            ctx.clearRect(0, 0, W, H);
+            return;
+        }
+        canvas.width = pxW;
+        canvas.height = pxH;
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     }
-    resize();
+    // Đo layout (clientWidth) ngay trong khối khởi động buộc trình duyệt tính lại
+    // TOÀN TRANG giữa lúc khởi động. Lùi tới SAU lần vẽ đầu tiên (2 lớp rAF): lúc đó
+    // layout đã sẵn sàng nên phép đo miễn phí — đo trong khung hình đầu sẽ buộc
+    // trình duyệt tính layout 2 lần. Người xem chỉ thấy màn chào che kín.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        resize();
+        if (audio.paused) { if (reduceMotion) drawStatic(); else drawIdle(); }
+    }));
     window.addEventListener('resize', resize);
     if (window.ResizeObserver) new ResizeObserver(resize).observe(banner);
 
@@ -818,7 +846,7 @@ function initBannerVisualizer() {
         }
     });
 
-    if (audio.paused) { if (reduceMotion) drawStatic(); else drawIdle(); }
+    // (Lần đo + vẽ đầu tiên đã được lùi sang khung hình đầu tiên ở phía trên)
     setTimeout(resize, 400);
     setTimeout(resize, 1200);
 }
@@ -1360,6 +1388,16 @@ function initMouseEffects() {
     let currentTiltY = 0;
 
     let hoveredElement = null;
+    let physicsId = null;
+
+    // Ambient spotlight được DỊCH bằng transform (xem style.css), KHÔNG vẽ lại gradient.
+    // Trước đây mỗi lần rê chuột là một lần vẽ lại gradient phủ toàn màn hình.
+    function moveSpotlight(x, y) {
+        if (!spotlight || !CONFIG.effects.enableSpotlight) return;
+        spotlight.style.transform = `translate3d(calc(-50% + ${(x - window.innerWidth / 2).toFixed(1)}px), calc(-50% + ${(y - window.innerHeight / 2).toFixed(1)}px), 0)`;
+    }
+    // Đổi kích thước cửa sổ: đặt lại theo vị trí chuột cuối cùng (giống hành vi cũ)
+    window.addEventListener('resize', () => moveSpotlight(mouseX, mouseY));
 
     // Direct, 0ms Instant Pin for Laser Cursor Dot
     function updateCursorDot(x, y) {
@@ -1417,11 +1455,9 @@ function initMouseEffects() {
         prevMouseX = mouseX;
         prevMouseY = mouseY;
 
-        // Update ambient spotlight position directly
-        if (CONFIG.effects.enableSpotlight && spotlight) {
-            spotlight.style.setProperty('--mouse-x', `${mouseX}px`);
-            spotlight.style.setProperty('--mouse-y', `${mouseY}px`);
-        }
+        // Update ambient spotlight position directly (dịch lớp — chỉ tốn compositor)
+        moveSpotlight(mouseX, mouseY);
+        ensurePhysics(); // có chuột động đậy là vòng physics phải thức
 
         // Calculate 3D Card Tilt relative to window center
         if (CONFIG.effects.enableTilt && tiltContainer) {
@@ -1452,6 +1488,7 @@ function initMouseEffects() {
         targetTiltX = 0;
         targetTiltY = 0;
         hoveredElement = null;
+        ensurePhysics(); // cần vòng lặp chạy để nghiêng card trở về 0 một cách mượt mà
     });
 
     document.addEventListener('mouseenter', () => {
@@ -1521,7 +1558,20 @@ function initMouseEffects() {
     });
 
     // Smooth physics loop (Lerp + Aerodynamic Stretch)
+    //
+    // Vòng lặp TỰ NGỦ khi mọi thứ đã đứng yên và TỰ THỨC khi có chuyển động.
+    // Trước đây nó chạy 60 khung hình/giây MÃI MÃI dù chuột không nhúc nhích, mỗi
+    // khung lại ghi lại transform → trình duyệt phải tính lại style liên tục và
+    // giành CPU với chính việc vẽ trang. Không đổi gì về hình ảnh.
+    let lastWriteX = NaN, lastWriteY = NaN, lastWriteAngle = NaN, lastWriteSX = NaN, lastWriteSY = NaN;
+    let lastTiltXWrite = NaN, lastTiltYWrite = NaN;
+
+    function ensurePhysics() {
+        if (physicsId === null) physicsId = requestAnimationFrame(renderPhysics);
+    }
+
     function renderPhysics() {
+        physicsId = null;
         let targetX = mouseX;
         let targetY = mouseY;
 
@@ -1567,20 +1617,50 @@ function initMouseEffects() {
             scaleY += (1 - scaleY) * 0.12;
         }
 
+        // Chỉ ghi style khi giá trị ĐỔI THẬT (dưới 0.02px / 0.05deg là mắt không thấy)
         if (cyberCursor) {
-            cyberCursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0) translate(-50%, -50%) rotate(${currentAngle.toFixed(1)}deg) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
+            const moved = !(Math.abs(cursorX - lastWriteX) < 0.02 && Math.abs(cursorY - lastWriteY) < 0.02 &&
+                            Math.abs(currentAngle - lastWriteAngle) < 0.05 &&
+                            Math.abs(scaleX - lastWriteSX) < 0.002 && Math.abs(scaleY - lastWriteSY) < 0.002);
+            if (moved) {
+                lastWriteX = cursorX; lastWriteY = cursorY; lastWriteAngle = currentAngle;
+                lastWriteSX = scaleX; lastWriteSY = scaleY;
+                cyberCursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0) translate(-50%, -50%) rotate(${currentAngle.toFixed(1)}deg) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
+            }
         }
 
         // Smooth Card Tilt
         if (CONFIG.effects.enableTilt && tiltContainer) {
             currentTiltX += (targetTiltX - currentTiltX) * 0.08;
             currentTiltY += (targetTiltY - currentTiltY) * 0.08;
-            tiltContainer.style.transform = `rotateX(${currentTiltX.toFixed(2)}deg) rotateY(${currentTiltY.toFixed(2)}deg)`;
+            // Cùng cách kiểm tra như con trỏ ở trên: khởi tạo NaN thì phép so sánh
+            // phải là "chưa đổi?" (phủ định) — nếu viết ngược lại (>=) thì NaN luôn sai
+            // và transform KHÔNG BAO GIỜ được ghi, tức mất hẳn hiệu ứng nghiêng card.
+            // Ngưỡng 0.002° ≈ 0.04px ở mép card rộng 1140px — dưới một điểm ảnh,
+            // nên trạng thái nghỉ của card trùng khít bản cũ.
+            const tiltMoved = !(Math.abs(currentTiltX - lastTiltXWrite) < 0.002 &&
+                                Math.abs(currentTiltY - lastTiltYWrite) < 0.002);
+            if (tiltMoved) {
+                lastTiltXWrite = currentTiltX; lastTiltYWrite = currentTiltY;
+                tiltContainer.style.transform = `rotateX(${currentTiltX.toFixed(2)}deg) rotateY(${currentTiltY.toFixed(2)}deg)`;
+            }
         }
 
-        requestAnimationFrame(renderPhysics);
+        // Đứng yên hoàn toàn (con trỏ đã tới đích, nghiêng về 0, không hover gì) → ngủ.
+        // Mọi mousemove/mouseleave sẽ đánh thức lại bằng ensurePhysics().
+        const still = Math.abs(cursorX - targetX) < 0.05 && Math.abs(cursorY - targetY) < 0.05 &&
+                      Math.abs(currentAngle) < 0.05 && Math.abs(scaleX - 1) < 0.002 && Math.abs(scaleY - 1) < 0.002 &&
+                      !hoveredElement &&
+                      (!(CONFIG.effects.enableTilt && tiltContainer) ||
+                       (Math.abs(targetTiltX - currentTiltX) < 0.002 && Math.abs(targetTiltY - currentTiltY) < 0.002));
+        if (!still) ensurePhysics();
     }
-    requestAnimationFrame(renderPhysics);
+    ensurePhysics();
+
+    // Hook kiểm thử (chỉ chạy khi URL có ?debug) — xem vòng lặp có ngủ khi đứng yên hay không
+    if (new URLSearchParams(location.search).has('debug')) {
+        window.__debugPhysics = () => ({ awake: physicsId !== null, wrote: [lastWriteX, lastWriteY, lastWriteAngle] });
+    }
 }
 
 /* ====================================================================
@@ -1682,9 +1762,12 @@ function initParticleCanvas() {
                 const p2 = particles[j];
                 const dx = p.x - p2.x;
                 const dy = p.y - p2.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                const d2 = dx * dx + dy * dy;
 
-                if (dist < 105) {
+                // So sánh BÌNH PHƯƠNG trước: ~2.000 cặp mỗi khung hình không còn phải
+                // khai căn; chỉ khai căn khi hai hạt thật sự đủ gần để vẽ dây nối.
+                if (d2 < 11025) { // 105px bình phương
+                    const dist = Math.sqrt(d2);
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(p2.x, p2.y);

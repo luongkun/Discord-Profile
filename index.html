@@ -25,6 +25,18 @@
     <meta name="twitter:description" content="Ghé thăm không gian số của mình: Discord presence thời gian thực, nhạc nền và vài thứ dễ thương khác.">
     <meta name="twitter:image" content="https://luongkun.pages.dev/og-image.jpg">
 
+    <!-- Mở sẵn kết nối tới những máy chủ dùng NGAY khi tải trang: bớt được một vòng
+         bắt tay DNS/TLS cho mỗi nơi (rõ rệt nhất trên mạng di động). Chỉ khai báo cho
+         nơi thật sự cần sớm — khai tràn lan lại làm loãng kết nối. -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">      <!-- CSS FontAwesome: đang chặn vẽ trang -->
+    <link rel="preconnect" href="https://cdn.discordapp.com">        <!-- avatar Discord: hiện ngay ở màn chào -->
+    <link rel="preconnect" href="https://api.lanyard.rest">          <!-- trạng thái realtime (WebSocket + REST) -->
+    <link rel="dns-prefetch" href="https://discord.com">             <!-- chỉ dùng để đếm thành viên server -->
+
+    <!-- Ảnh nền của card xuất hiện ngay khi mở trang: nạp sớm, không đợi tới lúc CSS
+         được phân tích xong mới bắt đầu tải -->
+    <link rel="preload" as="image" href="banner_executive.webp" fetchpriority="high">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,7 +57,7 @@
     <link rel="manifest" href="manifest.json">
 
     <!-- Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="style.css?v=10.3">
+    <link rel="stylesheet" href="style.css?v=11.5">
 </head>
 <body>
     <!-- Background Canvas for Particles -->
@@ -510,7 +522,7 @@
     </div>
 
     <!-- Scripts with Cache Buster -->
-    <script src="config.js?v=10.3"></script>
-    <script src="script.js?v=10.3"></script>
+    <script src="config.js?v=11.5"></script>
+    <script src="script.js?v=11.5"></script>
 </body>
 </html>

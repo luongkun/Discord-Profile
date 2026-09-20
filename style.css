@@ -86,16 +86,23 @@ body {
 }
 
 /* Ambient Mouse Spotlight */
+/* Gradient được vẽ MỘT lần ở giữa lớp, rồi cả lớp DỊCH bằng transform.
+   Trước đây đổi --mouse-x/--mouse-y khiến trình duyệt phải VẼ LẠI gradient phủ
+   toàn màn hình ở mỗi lần rê chuột (kèm việc mọi lớp backdrop-filter phía trên
+   phải làm mờ lại). Nay chỉ còn thao tác compositor — hình ảnh y hệt.
+   Lớp rộng hơn màn hình 1000px (500px mỗi bên): gradient mờ hụt hẳn ở 65% của
+   750px = 487.5px, nên dịch tới mép màn hình vẫn không hở cạnh. */
 #mouse-spotlight {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    top: 50%;
+    left: 50%;
+    width: calc(100vw + 1000px);
+    height: calc(100vh + 1000px);
+    transform: translate3d(-50%, -50%, 0);
     pointer-events: none;
     z-index: 1;
-    background: radial-gradient(750px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.045), transparent 65%);
-    will-change: background;
+    background: radial-gradient(750px circle at 50% 50%, rgba(255, 255, 255, 0.045), transparent 65%);
+    will-change: transform;
 }
 
 /* ====================================================================
