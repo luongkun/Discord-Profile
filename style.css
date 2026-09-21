@@ -1841,6 +1841,71 @@ body.cursor-hidden .cyber-cursor {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Nhóm bên phải footer: [lượt xem · thích] + [telemetry] nằm cạnh nhau.
+   Bọc trong một div để footer vẫn đúng 3 cột như trước (giờ, thương hiệu, nhóm phải). */
+.footer-right-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* LƯU Ý: thuộc tính `hidden` của trình duyệt chỉ là `[hidden] { display: none }`
+   trong stylesheet mặc định, nên CHỈ CẦN một khai báo `display` của mình là nó bị
+   vô hiệu — capsule "0 lượt xem" từng hiện ra dù có `hidden`. Phải chặn rõ ràng. */
+.stats-capsule[hidden] {
+    display: none;
+}
+
+/* Số lượt xem giữ im lặng, chỉ nút trái tim là bấm được */
+#stat-views {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.stats-like {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.stats-like i {
+    font-size: 0.74rem;
+    transition: var(--transition-smooth);
+}
+
+.stats-like:hover,
+.stats-like:hover i {
+    color: #ff6f9d;
+}
+
+.stats-like:active {
+    transform: scale(0.92);
+}
+
+.stats-like.liked,
+.stats-like.liked i {
+    color: #ff5c98;
+}
+
+@keyframes stats-like-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}
+
+.stats-like.pop i {
+    animation: stats-like-pop 0.42s ease-out;
+}
+
 .footer-icon {
     font-size: 0.74rem;
     color: #94a3b8;
@@ -2285,6 +2350,213 @@ body.love-open .main-viewport {
     letter-spacing: 1.2px;
 }
 
+/* ---- Cột mốc kỷ niệm (tự tính từ startDate) ---- */
+.setlove-milestone {
+    position: relative;   /* mốc neo cho tim bay khi đúng ngày kỷ niệm */
+    margin-top: 20px;
+}
+
+.milestone-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    font-size: 0.82rem;
+    letter-spacing: 0.2px;
+    color: #ffb3cd;
+    transition: color 0.4s ease;
+}
+
+.milestone-icon {
+    color: #ff6b9d;
+    font-size: 0.86rem;
+}
+
+.milestone-track {
+    position: relative;
+    width: min(280px, 68%);
+    height: 3px;
+    margin: 10px auto 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.09);
+    overflow: hidden;
+}
+
+.milestone-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 107, 157, 0.55), #ff6b9d);
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Đúng ngày kỷ niệm: chữ sáng lên và thanh chạy đầy */
+.setlove-milestone.is-today .milestone-line {
+    color: #ffffff;
+    text-shadow: 0 0 16px rgba(255, 107, 157, 0.85);
+    animation: milestoneGlow 2.6s ease-in-out infinite;
+}
+
+.setlove-milestone.is-today .milestone-fill {
+    background: linear-gradient(90deg, #ff8fb8, #ffffff);
+    box-shadow: 0 0 12px rgba(255, 143, 184, 0.9);
+}
+
+@keyframes milestoneGlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.72; }
+}
+
+/* Tim bay khi đúng ngày kỷ niệm — chỉ bay một đợt, không chạy vòng lặp */
+.milestone-heart-burst {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    pointer-events: none;
+    color: #ff6b9d;
+    font-size: 14px;
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: burstRise 1.9s ease-out forwards;
+}
+
+@keyframes burstRise {
+    0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
+    18% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--drift, 0px)), -150px) scale(1.25); }
+}
+
+/* ---- Dải ảnh kỷ niệm ---- */
+.setlove-photos {
+    margin-top: 24px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+.photos-track {
+    display: flex;
+    gap: 10px;
+    width: max-content;
+    animation: photosDrift 48s linear infinite;
+    will-change: transform;
+}
+
+/* Rê chuột vào thì dải dừng lại cho dễ nhìn */
+.setlove-photos:hover .photos-track {
+    animation-play-state: paused;
+}
+
+@keyframes photosDrift {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-50%, 0, 0); }
+}
+
+.photo-item {
+    flex: 0 0 auto;
+    width: 76px;
+    height: 76px;
+    padding: 0;
+    border: 1px solid rgba(255, 107, 157, 0.28);
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.photo-item:hover {
+    transform: translateY(-3px) scale(1.04);
+    border-color: rgba(255, 143, 184, 0.7);
+}
+
+.photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ---- Xem ảnh lớn ---- */
+.photo-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+body.photo-open .photo-lightbox {
+    opacity: 1;
+    visibility: visible;
+}
+
+.photo-lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 5, 8, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.photo-lightbox-card {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 14px 14px 10px;
+    max-width: min(880px, 88vw);
+    border: 1px solid rgba(255, 107, 157, 0.28);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    transform: scale(0.94);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.photo-open .photo-lightbox-card {
+    transform: scale(1);
+}
+
+.photo-lightbox-card img {
+    display: block;
+    max-width: 100%;
+    max-height: 72vh;
+    border-radius: 14px;
+}
+
+.photo-lightbox-card figcaption {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 0.86rem;
+    color: var(--text-secondary);
+}
+
+.photo-lightbox-card figcaption:empty {
+    display: none;
+}
+
+.photo-lightbox-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(18, 18, 22, 0.9);
+    color: #e8e8ee;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.photo-lightbox-close:hover {
+    background: rgba(255, 107, 157, 0.22);
+    color: #ffffff;
+}
+
 .setlove-quote {
     margin-top: 30px;
     font-size: 0.95rem;
@@ -2458,6 +2730,11 @@ body.love-open .main-viewport {
     .setlove-heart, .setlove-decor span { animation: none; }
     /* Hiệu ứng mới cũng phải tĩnh khi người dùng bật "giảm chuyển động" */
     .mesh-blob, .avatar-ring { animation: none; }
+    .stats-like.pop i { animation: none; }
+    .setlove-milestone.is-today .milestone-line { animation: none; }
+    .milestone-heart-burst { animation: none; opacity: 0; }
+    .photos-track { animation: none; }
+    .photo-lightbox-card { transition: none; }
     .love-thread { animation: none; clip-path: none; }
     .setlove-avatar-wrap { transition: none; }
     /* Giữ nguyên độ nghiêng, chỉ bỏ phóng to khi hover (tránh nhảy hình) */

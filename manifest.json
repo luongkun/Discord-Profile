@@ -1,6 +1,6 @@
 {
-    "name": "Nguyễn Lương — ProFile",
-    "short_name": "luongkun",
+    "name": "Nguyễn Lương — @Luong Kun",
+    "short_name": "@Luong Kun",
     "description": "Trang bio cá nhân: Discord presence thời gian thực, nhạc nền và vài thứ dễ thương khác.",
     "start_url": "/",
     "scope": "/",
@@ -23,7 +23,7 @@
             "purpose": "any"
         },
         {
-            "src": "/icon-512.png",
+            "src": "/icon-512-maskable.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"

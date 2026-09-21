@@ -6,9 +6,9 @@
  */
 
 const CONFIG = {
-    // 0. TÊN WEB (hiện ở tiêu đề tab, thẻ og:title khi share link).
+    // 0. TÊN WEB (hiện ở tiêu đề tab, gõ chữ xoá chữ lặp lại trong script.js).
     //    Để trống "" nếu muốn tiêu đề chạy theo tên hiển thị Discord.
-    siteName: "luongkun",
+    siteName: "@Luong Kun",
 
     // 1. DISCORD USER ID:
     discordId: "1222143238056574990",
@@ -107,8 +107,14 @@ const CONFIG = {
             "1222143238056574990": { avatar: "avatar-me.webp", deco: "deco-me.webp" },
             "1507678870000893982": { avatar: "avatar-partner.webp", deco: null }
         },
-        // Ngày bắt đầu yêu — 115 ngày tính đến 19/09/2026
+        // Ngày bắt đầu yêu (YYYY-MM-DD, giờ Việt Nam). Từ ngày này script tự tính:
+        // số ngày đã yêu, mốc tròn trăm ngày, và kỷ niệm theo tháng (ngày 27).
         startDate: "2026-05-27",
+
+        // Dải ảnh kỷ niệm (tuỳ chọn). Để trống [] thì panel Setlove y như cũ.
+        // Mỗi mục một dòng: { src: "<đường dẫn ảnh>", caption: "<chú thích ngắn>" }
+        // Ảnh chỉ được tải khi khách thật sự mở panel, nên trang vẫn nhẹ.
+        photos: [],
         // Lời nhắn yêu thương — bấm vào câu chữ ở panel để đổi qua lại
         quotes: [
             "Yêu nhau yêu hẳn đi — đừng nửa vời nửa vời 💕",
@@ -127,7 +133,8 @@ const CONFIG = {
     // 5. NHẠC NỀN & PLAYLIST (AUDIO PLAYLIST):
     music: {
         autoplayOnEnter: true,
-        volume: 0.4,
+        // 1 = mở trang là thanh âm lượng đã kéo sẵn tối đa (0.5 = một nửa...)
+        volume: 1,
         playlist: [
             {
                 title: "Mưa Đợi Chờ",

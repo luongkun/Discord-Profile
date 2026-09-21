@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initGreeting();
     initSetlove();
     initDonate();
+    initStats();
     initBannerVisualizer();
     // Nối chuỗi dự phòng cho mọi ảnh đang trỏ thẳng CDN Discord (khi trang vừa mở)
     applyGlobalAvatarFallbacks(LOCAL_AVATAR_FALLBACK);
@@ -295,12 +296,198 @@ function initSetlove() {
         });
     }
 
+    const prefersStill = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    /* ------------------------------------------------------------------
+       CỘT MỐC KỶ NIỆM — tự tính, KHÔNG phải cập nhật tay
+       Hai loại mốc: tròn trăm ngày, và kỷ niệm theo tháng (đúng ngày trong
+       tháng của startDate). Tính theo NGÀY giờ Việt Nam nên khách ở múi giờ
+       nào cũng thấy đúng ngày của hai bạn.
+       ------------------------------------------------------------------ */
+    const milestoneBox = document.getElementById('setlove-milestone');
+    const milestoneTextEl = document.getElementById('milestone-text');
+    const milestoneFill = document.getElementById('milestone-fill');
+
+    const VN_OFFSET = 7 * 3600000;
+    const DAY_MS = 86400000;
+    const dayNumber = (date) => Math.floor((date.getTime() + VN_OFFSET) / DAY_MS);
+    const vnMidnight = (year, month, day) => Date.UTC(year, month - 1, day) - VN_OFFSET;
+
+    let startParts = null;
+    if (cfg.startDate && /^\d{4}-\d{2}-\d{2}$/.test(cfg.startDate)) {
+        startParts = cfg.startDate.split('-').map(Number);
+    }
+    let milestoneIsToday = false;
+
+    // "1 tháng", "1 năm", "1 năm 2 tháng" — đọc tự nhiên hơn "14 tháng"
+    function monthLabel(months) {
+        if (months < 12) return `${months} tháng`;
+        const years = Math.floor(months / 12);
+        const rest = months % 12;
+        return rest === 0 ? `${years} năm` : `${years} năm ${rest} tháng`;
+    }
+
+    // Một đợt tim bay khi đúng ngày kỷ niệm (chỉ chạy một lần, dùng transform)
+    function heartBurst() {
+        if (!milestoneBox || prefersStill) return;
+        for (let i = 0; i < 14; i++) {
+            const heart = document.createElement('i');
+            heart.className = 'fa-solid fa-heart milestone-heart-burst';
+            heart.setAttribute('aria-hidden', 'true');
+            heart.style.setProperty('--drift', `${Math.round((Math.random() - 0.5) * 140)}px`);
+            heart.style.marginLeft = `${Math.round((Math.random() - 0.5) * 110)}px`;
+            heart.style.animationDelay = `${i * 80}ms`;
+            heart.style.fontSize = `${11 + Math.round(Math.random() * 7)}px`;
+            milestoneBox.appendChild(heart);
+            setTimeout(() => heart.remove(), 3000 + i * 80);
+        }
+    }
+
+    function updateMilestone() {
+        if (!milestoneBox || !milestoneTextEl || !startParts) return;
+        const [sy, sm, sd] = startParts;
+        const startDay = dayNumber(new Date(vnMidnight(sy, sm, sd)));
+        const today = dayNumber(new Date());
+        const days = today - startDay;
+        if (days < 0) return;   // ngày bắt đầu nằm ở tương lai: chưa có gì để đếm
+
+        // --- mốc tròn trăm ngày kế tiếp
+        const hundredDone = days > 0 && days % 100 === 0;
+        const nextHundred = (Math.floor(days / 100) + 1) * 100;
+        const hundredDay = startDay + nextHundred;
+
+        // --- kỷ niệm theo tháng kế tiếp (ngày trong tháng lấy từ startDate)
+        let monthDone = 0;
+        let nextMonthIndex = 0;
+        let monthDay = 0;
+        for (let m = 1; m <= 600; m++) {
+            const anchor = dayNumber(new Date(vnMidnight(sy, sm + m, sd)));
+            if (anchor > today) { nextMonthIndex = m; monthDay = anchor; break; }
+            if (anchor === today) monthDone = m;
+        }
+
+        // --- chọn mốc gần hơn để hiển thị (hôm nay trùng cả hai thì gộp lại)
+        let text = '';
+        let progress = 0;
+        milestoneIsToday = false;
+
+        if (hundredDone && monthDone) {
+            milestoneIsToday = true;
+            text = `Hôm nay tròn ${days} ngày & kỷ niệm ${monthLabel(monthDone)} 💕`;
+            progress = 1;
+        } else if (hundredDone) {
+            milestoneIsToday = true;
+            text = `Hôm nay tròn ${days} ngày yêu nhau 💕`;
+            progress = 1;
+        } else if (monthDone) {
+            milestoneIsToday = true;
+            text = `Hôm nay kỷ niệm ${monthLabel(monthDone)} yêu nhau 💕`;
+            progress = 1;
+        } else if (hundredDay <= monthDay || !monthDay) {
+            const left = hundredDay - today;
+            const prev = hundredDay - 100;
+            text = `Còn ${left} ngày nữa là mốc tròn ${nextHundred} ngày 💕`;
+            progress = (today - prev) / (hundredDay - prev);
+        } else {
+            const left = monthDay - today;
+            const prevMonth = dayNumber(new Date(vnMidnight(sy, sm + nextMonthIndex - 1, sd)));
+            text = `Còn ${left} ngày nữa là kỷ niệm ${monthLabel(nextMonthIndex)} 💕`;
+            progress = (today - prevMonth) / (monthDay - prevMonth);
+        }
+
+        milestoneTextEl.textContent = text;
+        milestoneBox.classList.toggle('is-today', milestoneIsToday);
+        milestoneBox.hidden = false;
+        if (milestoneFill) {
+            const pct = Math.max(0, Math.min(1, progress));
+            milestoneFill.style.width = `${(pct * 100).toFixed(1)}%`;
+        }
+        // Chỉ bắn tim khi panel đang mở (lúc mới tải trang panel còn đóng, bắn
+        // thì khách không thấy gì); mở panel khi đúng ngày thì toggle() bắn.
+        if (milestoneIsToday && document.body.classList.contains('love-open')) heartBurst();
+    }
+
+    updateMilestone();
+    // Mỗi phút tính lại — đủ để sang ngày mới là con số tự đổi, mà gần như không tốn gì
+    setInterval(updateMilestone, 60000);
+
+    /* ------------------------------------------------------------------
+       DẢI ẢNH KỶ NIỆM — chỉ dựng khi config.js có ảnh. Ảnh chỉ được tải
+       khi khách mở panel lần đầu (mở trang vẫn nhẹ như trước).
+       ------------------------------------------------------------------ */
+    const photosWrap = document.getElementById('setlove-photos');
+    const photosTrack = document.getElementById('setlove-photos-track');
+    const photoList = (Array.isArray(cfg.photos) ? cfg.photos : [])
+        .map(p => (typeof p === 'string' ? { src: p, caption: '' } : { src: (p && p.src) || '', caption: (p && p.caption) || '' }))
+        .filter(p => p.src);
+    let photosLoaded = false;
+
+    const lightbox = document.getElementById('photo-lightbox');
+    const lightboxImg = document.getElementById('photo-lightbox-img');
+    const lightboxCaption = document.getElementById('photo-lightbox-caption');
+
+    function closePhoto() {
+        if (!lightbox) return;
+        document.body.classList.remove('photo-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+    }
+
+    function openPhoto(item) {
+        if (!lightbox || !lightboxImg) return;
+        lightboxImg.src = item.src;
+        lightboxImg.alt = item.caption || 'Ảnh kỷ niệm';
+        if (lightboxCaption) lightboxCaption.textContent = item.caption || '';
+        document.body.classList.add('photo-open');
+        lightbox.setAttribute('aria-hidden', 'false');
+        playBeepSound(600, 0.05);
+    }
+
+    function loadPhotos() {
+        if (photosLoaded || !photosTrack) return;
+        photosLoaded = true;
+        photosTrack.querySelectorAll('img[data-src]').forEach(img => {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+        });
+    }
+
+    if (photosWrap && photosTrack && photoList.length > 0) {
+        // Nhân đôi danh sách để dải trôi liền mạch (dịch đúng 50% rồi lặp)
+        [...photoList, ...photoList].forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'photo-item';
+            btn.setAttribute('aria-label', item.caption ? `Xem ảnh: ${item.caption}` : 'Xem ảnh kỷ niệm');
+            const img = document.createElement('img');
+            img.alt = item.caption || 'Ảnh kỷ niệm';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.dataset.src = item.src;   // gán src thật khi panel mở (xem loadPhotos)
+            btn.appendChild(img);
+            btn.addEventListener('click', () => openPhoto(item));
+            photosTrack.appendChild(btn);
+        });
+        photosWrap.hidden = false;
+
+        const lightboxBackdrop = document.getElementById('photo-lightbox-backdrop');
+        const lightboxClose = document.getElementById('photo-lightbox-close');
+        if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', closePhoto);
+        if (lightboxClose) lightboxClose.addEventListener('click', closePhoto);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.body.classList.contains('photo-open')) closePhoto();
+        });
+    }
+
     // Mở/đóng panel trượt
     function toggle(open) {
         const willOpen = open !== undefined ? open : !document.body.classList.contains('love-open');
         document.body.classList.toggle('love-open', willOpen);
         panel.setAttribute('aria-hidden', String(!willOpen));
         arrow.setAttribute('aria-label', willOpen ? 'Quay lại bio' : 'Xem phần Setlove');
+        if (willOpen) {
+            loadPhotos();
+            if (milestoneIsToday) heartBurst();   // đúng ngày kỷ niệm thì mở panel là có tim bay
+        }
         positionArrow();
     }
 
@@ -529,6 +716,8 @@ function initSetlove() {
    0.8 DONATE QR MODAL (bấm nút Donate -> hiện ảnh QR giữa màn hình)
    ==================================================================== */
 // Ảnh QR chỉ được tải khi khách THẬT SỰ mở hộp thoại (tiết kiệm ~152KB cho người không dùng)
+// Nạp ảnh QR vào sẵn (gọi lúc trang rảnh, hoặc lúc mở hộp thoại nếu chưa kịp).
+// Idempotent: gọi lại nhiều lần cũng chỉ tải ảnh một lần.
 function loadDonateQr() {
     const img = document.getElementById('donate-qr');
     const empty = document.getElementById('donate-qr-empty');
@@ -564,7 +753,14 @@ function initDonate() {
     const info = document.getElementById('donate-info');
     const cfg = CONFIG.donate || {};
 
-    // Ảnh QR: xem loadDonateQr() — chỉ tải lúc mở hộp thoại, không tải khi vào trang
+    // Ảnh QR: nạp SẴN khi trang vừa rảnh (trước đây chỉ bắt đầu tải lúc bấm Donate
+    // nên mở hộp thoại phải chờ vài trăm ms mới thấy mã). Đặt ở lúc trình duyệt rảnh
+    // nên vẫn không tranh băng thông với lần vẽ đầu tiên.
+    if (cfg.qrImage) {
+        const warmQr = () => loadDonateQr();
+        if ('requestIdleCallback' in window) requestIdleCallback(warmQr, { timeout: 3000 });
+        else setTimeout(warmQr, 1500);
+    }
 
     // Thông tin chuyển khoản — chỉ hiện dòng nào có dữ liệu
     if (info) {
@@ -582,6 +778,72 @@ function initDonate() {
     if (closeBtn) closeBtn.addEventListener('click', () => openDonate(false));
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && document.body.classList.contains('donate-open')) openDonate(false);
+    });
+}
+
+/* ====================================================================
+   0.95 LƯỢT XEM & LƯỢT THÍCH TRANG (Cloudflare Pages Function: /api/stats)
+   ====================================================================
+   Số liệu lấy từ hàm trong thư mục functions/ (KV của Cloudflare). Không có API
+   — ví dụ khi mở bằng máy cục bộ hoặc chưa gắn KV — thì phần này để nguyên
+   `hidden`, khách không thấy gì và trang chạy y như cũ. */
+function formatStatNumber(value) {
+    const n = Number(value) || 0;
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.', ',') + 'M';
+    if (n >= 10000) return Math.round(n / 1000) + 'k';
+    return n.toLocaleString('vi-VN');
+}
+
+function initStats() {
+    const box = document.getElementById('site-stats');
+    const viewsEl = document.getElementById('stat-views');
+    const likesEl = document.getElementById('stat-likes');
+    const likeBtn = document.getElementById('stats-like');
+    const likeIcon = document.getElementById('stats-like-icon');
+    if (!box || !likeBtn) return;
+
+    function paint(data) {
+        if (viewsEl) viewsEl.textContent = formatStatNumber(data.views);
+        if (likesEl) likesEl.textContent = formatStatNumber(data.likes);
+        const liked = Boolean(data.liked);
+        likeBtn.classList.toggle('liked', liked);
+        likeBtn.setAttribute('aria-pressed', String(liked));
+        if (likeIcon) likeIcon.className = liked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+        box.hidden = false;
+    }
+
+    // GET vừa đọc số liệu vừa tính một lượt xem (server tự chống đếm trùng theo IP)
+    fetch('/api/stats', { headers: { Accept: 'application/json' } })
+        .then(res => (res.ok ? res.json() : null))
+        .then(data => {
+            if (!data || data.disabled) return;
+            paint(data);
+        })
+        .catch(() => {});
+
+    likeBtn.addEventListener('click', () => {
+        if (likeBtn.dataset.busy) return;
+        likeBtn.dataset.busy = '1';
+        playBeepSound(660, 0.06);
+        fetch('/api/stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ action: 'like' })
+        })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => {
+                if (!data || data.disabled) return;
+                paint(data);
+                if (data.counted) {
+                    likeBtn.classList.add('pop');
+                    setTimeout(() => likeBtn.classList.remove('pop'), 460);
+                    showToast('Cảm ơn bạn đã thích trang này 💗', 'fa-solid fa-heart');
+                } else {
+                    showToast('Bạn đã thích trang này hôm nay rồi 💗', 'fa-solid fa-heart');
+                }
+            })
+            .catch(() => {})
+            .finally(() => { delete likeBtn.dataset.busy; });
     });
 }
 
@@ -854,9 +1116,76 @@ function initBannerVisualizer() {
 /* ====================================================================
    1. PROFILE UI INITIALIZATION FROM CONFIG
    ==================================================================== */
+/* ====================================================================
+   0.9 TIÊU ĐỀ TAB — hiệu ứng gõ chữ: gõ ra → giữ → xoá đi → gõ lại
+   ==================================================================== */
+const TITLE_TYPE_MS = 150;       // mỗi ký tự khi gõ ra
+const TITLE_ERASE_MS = 70;       // mỗi ký tự khi xoá đi
+const TITLE_HOLD_FULL_MS = 2600; // giữ nguyên câu hoàn chỉnh
+const TITLE_HOLD_EMPTY_MS = 550; // nghỉ khi đã xoá hết
+
+let titleTimer = null;
+let titleVisibleChars = 0;
+let titleErasing = false;
+
+// Tiêu đề đầy đủ: ưu tiên CONFIG.siteName, không có thì lấy tên hiển thị Discord.
+function titleText() {
+    return CONFIG.siteName || `@${CONFIG.profile.name}`;
+}
+
+function titleTick() {
+    const full = titleText();
+    if (!titleErasing) {
+        titleVisibleChars++;
+        document.title = full.slice(0, titleVisibleChars);
+        if (titleVisibleChars >= full.length) {
+            titleErasing = true;
+            titleTimer = setTimeout(titleTick, TITLE_HOLD_FULL_MS);
+            return;
+        }
+        titleTimer = setTimeout(titleTick, TITLE_TYPE_MS);
+    } else {
+        titleVisibleChars--;
+        document.title = full.slice(0, Math.max(0, titleVisibleChars));
+        if (titleVisibleChars <= 0) {
+            titleErasing = false;
+            titleTimer = setTimeout(titleTick, TITLE_HOLD_EMPTY_MS);
+            return;
+        }
+        titleTimer = setTimeout(titleTick, TITLE_ERASE_MS);
+    }
+}
+
+function startTitleTyping() {
+    // Ai bật "giảm chuyển động" trong hệ điều hành thì để tiêu đề đứng yên.
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.title = titleText();
+        return;
+    }
+    if (titleTimer || titleVisibleChars > 0) return;
+    titleErasing = false;
+    document.title = '';
+    titleTimer = setTimeout(titleTick, TITLE_TYPE_MS);
+
+    // Ẩn tab thì dừng vòng lặp (khỏi tốn CPU vô ích) và hiện sẵn tên đầy đủ;
+    // quay lại tab thì chạy tiếp từ chỗ xoá.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearTimeout(titleTimer);
+            titleTimer = null;
+            if (!document.title) document.title = titleText();
+        } else if (!titleTimer) {
+            const full = titleText();
+            titleVisibleChars = full.length;
+            titleErasing = true;
+            titleTimer = setTimeout(titleTick, TITLE_HOLD_FULL_MS);
+        }
+    });
+}
+
 function initProfileUI() {
-    // Set Browser Document Title (ưu tiên CONFIG.siteName — tên web, không phụ thuộc tên Discord)
-    document.title = `ProFile ${CONFIG.siteName || CONFIG.profile.name}`;
+    // Tiêu đề tab: hiệu ứng gõ chữ (xem startTitleTyping phía trên)
+    startTitleTyping();
 
     // Set Profile Text
     const nameEl = document.getElementById('user-display-name');
@@ -1038,7 +1367,7 @@ function initProfileUI() {
             const link = window.location.href;
             if (canShare) {
                 navigator.share({
-                    title: document.title,
+                    title: titleText(),   // không lấy tiêu đề đang gõ dở
                     text: 'Ghé thăm không gian số của mình nhé',
                     url: link
                 }).then(() => playBeepSound(680, 0.08)).catch(() => {});
@@ -1224,7 +1553,9 @@ function initAudioController() {
         hintEl.textContent = `${playlist.length} track${playlist.length > 1 ? 's' : ''} playlist ready • tap anywhere`;
     }
 
-    audio.volume = CONFIG.music.volume || 0.4;
+    // Mặc định kéo sẵn mức tối đa (CONFIG.music.volume = 1). Dùng phép so với
+    // số thay vì `|| 0.4` để mức 0 (tắt tiếng) cũng được tôn trọng.
+    audio.volume = typeof CONFIG.music.volume === 'number' ? CONFIG.music.volume : 0.4;
     if (volumeSlider) volumeSlider.value = audio.volume;
 
     function loadTrack(index, autoPlay = false) {
@@ -2046,7 +2377,7 @@ function updateDiscordPresenceUI(data) {
             if (nameEl) nameEl.textContent = liveName;
             const enterNameEl = document.querySelector('.cute-name, .enter-name');
             if (enterNameEl) enterNameEl.textContent = liveName;
-            if (!CONFIG.siteName) document.title = `ProFile ${liveName}`;
+            // (Tiêu đề tab tự chạy theo titleText() ở startTitleTyping, không cần ghi lại)
             CONFIG.profile.name = liveName;
         }
 

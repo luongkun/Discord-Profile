@@ -125,11 +125,53 @@ else:
 
 # ----------------------------------------------------------------- 3. JS / 4. CSS
 if shutil.which("node"):
-    for f in ("script.js", "config.js"):
+    js_files = ["script.js", "config.js"]
+    for f in js_files:
         r = subprocess.run(["node", "--check", os.path.join(ROOT, f)], capture_output=True, text=True)
         if r.returncode != 0:
             loi.append(f"JS: {f} sai cú pháp:\n{r.stderr.strip()[:400]}")
     da_qua.append("script.js và config.js: cú pháp JavaScript hợp lệ")
+
+    # Pages Functions là ES module (có `export`) — node --check chỉ hiểu CommonJS,
+    # nên phải kiểm qua bản sao đuôi .mjs. Cùng file này cũng bị Cloudflare chạy
+    # thật ở /api/stats nên sai cú pháp thì API chết âm thầm.
+    import tempfile
+
+    funcs = []
+    func_dir = os.path.join(ROOT, "functions")
+    for base, _dirs, files in os.walk(func_dir):
+        for name in sorted(files):
+            if name.endswith(".js"):
+                funcs.append(os.path.join(base, name))
+    for path in funcs:
+        rel = os.path.relpath(path, ROOT)
+        with open(path, "r", encoding="utf-8") as fh:
+            src = fh.read()
+        if "export" not in src:
+            continue
+        with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False, encoding="utf-8") as tmp:
+            tmp.write(src)
+            tmp_path = tmp.name
+        try:
+            r = subprocess.run(["node", "--check", tmp_path], capture_output=True, text=True)
+            if r.returncode != 0:
+                loi.append(f"JS (Pages Function): {rel} sai cú pháp:\n{r.stderr.strip()[:400]}")
+        finally:
+            os.remove(tmp_path)
+    if funcs:
+        da_qua.append(f"{len(funcs)} Pages Function(s): cú pháp ES module hợp lệ")
+
+    # API đếm lượt xem/thích là phần duy nhất chạy trên server — chạy thử logic
+    # bằng KV giả (không cần tài khoản Cloudflare) để lỗi lộ ra ở máy, không phải
+    # đợi tới lúc lên live mới biết.
+    stats_test = os.path.join(ROOT, ".github", "scripts", "test_stats.mjs")
+    if os.path.exists(stats_test):
+        r = subprocess.run(["node", stats_test, ROOT], capture_output=True, text=True)
+        if r.returncode != 0:
+            loi.append("API lượt xem/lượt thích: phép thử logic thất bại:\n" + (r.stdout or r.stderr).strip()[-600:])
+        else:
+            tong = [ln for ln in r.stdout.splitlines() if "phép thử API đạt" in ln]
+            da_qua.append("API lượt xem/lượt thích: " + (tong[0].strip() if tong else "phép thử logic đạt"))
 else:
     print("!! Bỏ qua kiểm tra cú pháp JS: chưa có node")
 

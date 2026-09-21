@@ -40,6 +40,10 @@
 /icon-512.png
   Cache-Control: public, max-age=86400
 
+# Bản maskable cho Android (nền đặc, chữ thu nhỏ nằm trong vùng an toàn)
+/icon-512-maskable.png
+  Cache-Control: public, max-age=86400
+
 /og-image.jpg
   Cache-Control: public, max-age=86400
 

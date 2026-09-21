@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProFile luongkun</title>
+    <title>@Luong Kun</title>
     <meta name="description" content="Trang bio cá nhân của Nguyễn Lương: Discord presence thời gian thực, máy chủ đang tham gia, nhạc nền và khung ủng hộ.">
     <meta name="theme-color" content="#0a0a0a">
 
@@ -14,14 +14,14 @@
     <meta property="og:site_name" content="luongkun">
     <meta property="og:locale" content="vi_VN">
     <meta property="og:url" content="https://luongkun.pages.dev/">
-    <meta property="og:title" content="Nguyễn Lương — ProFile luongkun">
+    <meta property="og:title" content="Nguyễn Lương — @Luong Kun">
     <meta property="og:description" content="Ghé thăm không gian số của mình: Discord presence thời gian thực, nhạc nền và vài thứ dễ thương khác.">
     <meta property="og:image" content="https://luongkun.pages.dev/og-image.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Thẻ giới thiệu Nguyễn Lương">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Nguyễn Lương — ProFile luongkun">
+    <meta name="twitter:title" content="Nguyễn Lương — @Luong Kun">
     <meta name="twitter:description" content="Ghé thăm không gian số của mình: Discord presence thời gian thực, nhạc nền và vài thứ dễ thương khác.">
     <meta name="twitter:image" content="https://luongkun.pages.dev/og-image.jpg">
 
@@ -50,14 +50,14 @@
     <meta http-equiv="Expires" content="0">
 
     <!-- Rounded Avatar Favicons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=7.1">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=7.1">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=7.1">
-    <link rel="shortcut icon" href="favicon.ico?v=7.1">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=8">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=8">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=8">
+    <link rel="shortcut icon" href="favicon.ico?v=8">
     <link rel="manifest" href="manifest.json">
 
     <!-- Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="style.css?v=11.5">
+    <link rel="stylesheet" href="style.css?v=11.8">
 </head>
 <body>
     <!-- Background Canvas for Particles -->
@@ -95,14 +95,18 @@
             <!-- Cute Avatar with soft halo & floating greeting -->
             <div class="cute-avatar-wrap">
                 <div class="cute-avatar-halo"></div>
-                <img src="https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256" alt="Dương Trần Avatar" class="cute-avatar-img">
+                <img src="https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256" alt="Ảnh đại diện" class="cute-avatar-img">
                 <span class="cute-greet-bubble">hi there! 🤍</span>
             </div>
 
             <!-- Profile Info: Soft & Sweet -->
             <div class="cute-identity">
                 <div class="cute-name-box">
-                    <span class="cute-name">Dương Trần</span>
+                    <!-- TÊN DỰ PHÒNG hiện ngay khi trang vừa vẽ, trước khi JS chạy.
+                         Đổi tên hiển thị thì sửa đồng thời 3 chỗ cho khỏi loé tên cũ:
+                         chỗ này, thẻ <h1 id="user-display-name"> bên dưới, và
+                         CONFIG.profile.name trong config.js. -->
+                    <span class="cute-name">Toa</span>
                     <span class="cute-sparkle-icon">✧</span>
                 </div>
                 <p class="cute-subtext">welcome to my quiet corner</p>
@@ -153,7 +157,7 @@
                 <span class="bar bar-4"></span>
             </div>
             <div class="volume-slider-wrap">
-                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.4" aria-label="Volume">
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1" aria-label="Volume">
             </div>
         </div>
     </div>
@@ -178,7 +182,7 @@
                 <section class="card-profile-bar">
                     <div class="profile-main-info">
                         <div class="avatar-wrapper" id="avatar-wrapper">
-                            <img src="https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256" alt="Dương Trần Avatar" id="profile-avatar" class="profile-avatar">
+                            <img src="https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256" alt="Ảnh đại diện" id="profile-avatar" class="profile-avatar">
                             <img src="avatar_decoration.webp" alt="" class="avatar-decoration" id="profile-avatar-decoration" aria-hidden="true">
                             <div class="status-indicator" id="status-indicator" title="Discord Status">
                                 <span class="status-dot"></span>
@@ -187,7 +191,9 @@
 
                         <div class="user-meta">
                             <div class="name-row">
-                                <h1 class="user-display-name" id="user-display-name">Dương Trần</h1>
+                                <!-- Xem ghi chú ở .cute-name phía trên: tên này phải khớp
+                                     CONFIG.profile.name, nếu không sẽ loé tên cũ lúc tải. -->
+                                <h1 class="user-display-name" id="user-display-name">Toa</h1>
                                 <span class="verified-badge" title="Verified Visionary">
                                     <i class="fa-solid fa-circle-check"></i>
                                 </span>
@@ -457,7 +463,26 @@
                             </div>
                         </div>
 
+                        <!-- Cột mốc kỷ niệm: TỰ TÍNH từ ngày bắt đầu yêu (mốc tròn
+                             trăm ngày + kỷ niệm theo tháng) — không phải cập nhật tay.
+                             Chưa có startDate thì script.js để nguyên `hidden`. -->
+                        <div class="setlove-milestone" id="setlove-milestone" hidden>
+                            <div class="milestone-line">
+                                <i class="fa-solid fa-cake-candles milestone-icon" aria-hidden="true"></i>
+                                <span id="milestone-text">Đang tính…</span>
+                            </div>
+                            <div class="milestone-track" aria-hidden="true">
+                                <div class="milestone-fill" id="milestone-fill"></div>
+                            </div>
+                        </div>
+
                         <div class="setlove-quote" id="setlove-quote" title="Bấm để đổi câu khác 💕">"Yêu nhau yêu hẳn đi — đừng nửa vời nửa vời 💕"</div>
+
+                        <!-- Dải ảnh kỷ niệm: chỉ hiện khi config.js -> setlove.photos có
+                             ảnh. Ảnh chỉ được tải khi panel mở lần đầu, nên trang vẫn nhẹ. -->
+                        <div class="setlove-photos" id="setlove-photos" hidden>
+                            <div class="photos-track" id="setlove-photos-track"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -480,10 +505,25 @@
                             <span class="insignia-sub">PROFILE</span>
                         </div>
                     </div>
-                    <div class="footer-right footer-capsule">
-                        <span class="telemetry-live-dot"></span>
-                        <i class="fa-solid fa-signal telemetry-icon"></i>
-                        <span id="ping-indicator">24ms • 100% ONLINE</span>
+                    <div class="footer-right-group">
+                        <!-- Lượt xem + nút thích: số liệu THẬT lấy từ /api/stats
+                             (Cloudflare Pages Function + KV). Nếu chưa gắn KV hoặc API
+                             lỗi thì script.js để nguyên thuộc tính `hidden` này —
+                             khách không thấy gì lạ, trang vẫn chạy y như cũ. -->
+                        <div class="footer-capsule stats-capsule" id="site-stats" hidden>
+                            <i class="fa-regular fa-eye footer-icon"></i>
+                            <span id="stat-views">0</span>
+                            <button class="stats-like" id="stats-like" type="button"
+                                    aria-label="Thích trang này" title="Thích trang này" aria-pressed="false">
+                                <i class="fa-regular fa-heart" id="stats-like-icon"></i>
+                                <span id="stat-likes">0</span>
+                            </button>
+                        </div>
+                        <div class="footer-right footer-capsule">
+                            <span class="telemetry-live-dot"></span>
+                            <i class="fa-solid fa-signal telemetry-icon"></i>
+                            <span id="ping-indicator">24ms • 100% ONLINE</span>
+                        </div>
                     </div>
                 </footer>
             </article>
@@ -492,6 +532,19 @@
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Xem ảnh kỷ niệm lớn (chỉ dùng khi dải ảnh bật). Thẳng con của <body> để
+         `position: fixed` neo đúng màn hình, giống hộp thoại Donate. -->
+    <div class="photo-lightbox" id="photo-lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Ảnh kỷ niệm">
+        <div class="photo-lightbox-backdrop" id="photo-lightbox-backdrop"></div>
+        <figure class="photo-lightbox-card">
+            <button class="photo-lightbox-close" id="photo-lightbox-close" aria-label="Đóng" title="Đóng (ESC)">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="photo-lightbox-img" alt="">
+            <figcaption id="photo-lightbox-caption"></figcaption>
+        </figure>
+    </div>
 
     <!-- Donate QR Modal (thẳng con của <body> để `position: fixed` neo đúng màn hình) -->
     <div class="donate-modal" id="donate-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Ủng hộ tác giả">
@@ -522,7 +575,7 @@
     </div>
 
     <!-- Scripts with Cache Buster -->
-    <script src="config.js?v=11.5"></script>
-    <script src="script.js?v=11.5"></script>
+    <script src="config.js?v=11.8"></script>
+    <script src="script.js?v=11.8"></script>
 </body>
 </html>
