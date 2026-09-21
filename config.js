@@ -108,7 +108,7 @@ const CONFIG = {
             "1507678870000893982": { avatar: "avatar-partner.webp", deco: null }
         },
         // Ngày bắt đầu yêu (YYYY-MM-DD, giờ Việt Nam). Từ ngày này script tự tính:
-        // số ngày đã yêu, mốc tròn trăm ngày, và kỷ niệm theo tháng (ngày 27).
+        // số ngày đã yêu và mốc kỷ niệm (1 tháng = 30 ngày).
         startDate: "2026-05-27",
 
         // Dải ảnh kỷ niệm (tuỳ chọn). Để trống [] thì panel Setlove y như cũ.

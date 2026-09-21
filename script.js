@@ -313,6 +313,8 @@ function initSetlove() {
     const dayNumber = (date) => Math.floor((date.getTime() + VN_OFFSET) / DAY_MS);
     const vnMidnight = (year, month, day) => Date.UTC(year, month - 1, day) - VN_OFFSET;
 
+    const MONTH_LENGTH_DAYS = 30;   // 1 tháng = 30 ngày (cách hai bạn vẫn đếm)
+
     let startParts = null;
     if (cfg.startDate && /^\d{4}-\d{2}-\d{2}$/.test(cfg.startDate)) {
         startParts = cfg.startDate.split('-').map(Number);
@@ -356,15 +358,12 @@ function initSetlove() {
         const nextHundred = (Math.floor(days / 100) + 1) * 100;
         const hundredDay = startDay + nextHundred;
 
-        // --- kỷ niệm theo tháng kế tiếp (ngày trong tháng lấy từ startDate)
-        let monthDone = 0;
-        let nextMonthIndex = 0;
-        let monthDay = 0;
-        for (let m = 1; m <= 600; m++) {
-            const anchor = dayNumber(new Date(vnMidnight(sy, sm + m, sd)));
-            if (anchor > today) { nextMonthIndex = m; monthDay = anchor; break; }
-            if (anchor === today) monthDone = m;
-        }
+        // --- kỷ niệm theo tháng, với MỘT THÁNG = 30 NGÀY (theo cách hai bạn đếm):
+        //     mốc thứ m rơi đúng vào ngày thứ m*30 kể từ ngày bắt đầu.
+        //     Ví dụ ngày thứ 117 -> mốc 4 tháng (120 ngày) còn 3 ngày.
+        const monthDone = days > 0 && days % MONTH_LENGTH_DAYS === 0 ? days / MONTH_LENGTH_DAYS : 0;
+        const nextMonthIndex = Math.floor(days / MONTH_LENGTH_DAYS) + 1;
+        const monthDay = startDay + nextMonthIndex * MONTH_LENGTH_DAYS;
 
         // --- chọn mốc gần hơn để hiển thị (hôm nay trùng cả hai thì gộp lại)
         let text = '';
@@ -390,7 +389,7 @@ function initSetlove() {
             progress = (today - prev) / (hundredDay - prev);
         } else {
             const left = monthDay - today;
-            const prevMonth = dayNumber(new Date(vnMidnight(sy, sm + nextMonthIndex - 1, sd)));
+            const prevMonth = startDay + (nextMonthIndex - 1) * MONTH_LENGTH_DAYS;
             text = `Còn ${left} ngày nữa là kỷ niệm ${monthLabel(nextMonthIndex)} 💕`;
             progress = (today - prevMonth) / (monthDay - prevMonth);
         }
@@ -1127,14 +1126,24 @@ const TITLE_HOLD_EMPTY_MS = 550; // nghỉ khi đã xoá hết
 let titleTimer = null;
 let titleVisibleChars = 0;
 let titleErasing = false;
+let titleStarted = false;
 
 // Tiêu đề đầy đủ: ưu tiên CONFIG.siteName, không có thì lấy tên hiển thị Discord.
 function titleText() {
     return CONFIG.siteName || `@${CONFIG.profile.name}`;
 }
 
+// SÀN của tiêu đề — không bao giờ cho tiêu đề trống: trình duyệt gặp tiêu đề rỗng
+// sẽ tự hiện ĐỊA CHỈ trang ở tab (thành "luongkun.pages.dev"). Sàn là phần chữ
+// trước khoảng trắng cuối: "@Luong Kun" -> "@Luong".
+function titleFloor(text) {
+    const cut = text.trimEnd().lastIndexOf(' ');
+    return cut > 0 ? cut : 1;
+}
+
 function titleTick() {
     const full = titleText();
+    const floor = titleFloor(full);
     if (!titleErasing) {
         titleVisibleChars++;
         document.title = full.slice(0, titleVisibleChars);
@@ -1146,8 +1155,8 @@ function titleTick() {
         titleTimer = setTimeout(titleTick, TITLE_TYPE_MS);
     } else {
         titleVisibleChars--;
-        document.title = full.slice(0, Math.max(0, titleVisibleChars));
-        if (titleVisibleChars <= 0) {
+        document.title = full.slice(0, Math.max(floor, titleVisibleChars));
+        if (titleVisibleChars <= floor) {
             titleErasing = false;
             titleTimer = setTimeout(titleTick, TITLE_HOLD_EMPTY_MS);
             return;
@@ -1162,10 +1171,15 @@ function startTitleTyping() {
         document.title = titleText();
         return;
     }
-    if (titleTimer || titleVisibleChars > 0) return;
-    titleErasing = false;
-    document.title = '';
-    titleTimer = setTimeout(titleTick, TITLE_TYPE_MS);
+    if (titleStarted) return;   // chỉ dựng một vòng lặp duy nhất
+    titleStarted = true;
+    // Bắt đầu từ trạng thái "đủ chữ" (HTML đã có sẵn <title>@Luong Kun</title>) nên
+    // không nháy, rồi mới xoá bớt và gõ lại.
+    const full = titleText();
+    titleVisibleChars = full.length;
+    titleErasing = true;
+    document.title = full;
+    titleTimer = setTimeout(titleTick, TITLE_HOLD_FULL_MS);
 
     // Ẩn tab thì dừng vòng lặp (khỏi tốn CPU vô ích) và hiện sẵn tên đầy đủ;
     // quay lại tab thì chạy tiếp từ chỗ xoá.
