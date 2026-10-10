@@ -1,138 +1,125 @@
 #!/usr/bin/env python3
 """
-Sinh bộ icon monogram "NL" cho website (favicon, icon cài app, bản maskable).
+Sinh bộ icon sparkle vàng cho website (favicon, icon cài app, bản maskable).
 
-Vì sao có file này: bộ icon được vẽ lại từ chữ, không phải ảnh chụp tay — giữ
-script trong repo để sau này đổi chữ (ví dụ "NL" -> tên khác) chỉ cần sửa LABEL
-rồi chạy lại, thay vì mò lại từng kích thước.
-
-Phong cách bám đúng thiết kế "DT" cũ:
-  - nền vuông đen bo góc 12% (đo từ icon cũ)
-  - monogram trắng, in nghiêng, nét rất đậm
-  - một nét sổ chéo cắt qua chữ (đặc trưng của bộ icon cũ)
-  - chữ chiếm 66% bề rộng × 44% chiều cao icon (đo từ icon cũ)
+Theo cách làm của Clone-Profile (make_icons.py bên đó):
+  - icon tròn: gradient dọc 3 điểm dừng, trong suốt bên ngoài vòng tròn
+  - motif vẽ tay ở giữa (bên này là chiếc lá, bên ta là sparkle 4 cánh
+    giống icon trạng thái current-status), viền trắng/vàng
+  - vài tia sparkle nhỏ + vòng tròn trắng sát mép
 
 Cách dùng:  python3 .github/scripts/make_icons.py [thư_mục_gốc]
-Cần: Pillow + font Noto Sans Black Italic (có sẵn trên Ubuntu và trên runner CI).
+Cần: Pillow (không cần font).
 """
 
-import math
 import os
 import struct
 import sys
+import tempfile
 
-from PIL import Image, ImageChops, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
-LABEL = "NL"                     # chữ trong icon — đổi ở đây khi cần
-FONT_PATH = "/usr/share/fonts/noto/NotoSans-BlackItalic.ttf"
-FONT_FALLBACKS = [
-    "/usr/share/fonts/truetype/noto/NotoSans-BlackItalic.ttf",
-    "/usr/share/fonts/noto/NotoSans-Black.ttf",
-]
+MASTER = 1024
+CENTER = (MASTER // 2, MASTER // 2)
 
-MASTER = 1024                    # kích thước gốc, hạ mẫu xuống các cỡ nhỏ
-RADIUS_RATIO = 0.12              # bo góc
-GLYPH_H_RATIO = 0.44             # chiều cao chữ / cạnh icon
-GLYPH_W_RATIO = 0.66             # bề rộng chữ / cạnh icon
-KERNING = -40                    # âm = hai chữ sát nhau hơn
-SHEAR = 0.08                     # nghiêng thêm ngoài độ nghiêng của font
-CUT = (58, 0.035, (0.48, 0.52))  # nét sổ: góc, độ dày, tâm
-BG = (5, 5, 5, 255)
-FG = (255, 255, 255, 255)
-MASKABLE_SCALE = 0.78            # bản maskable: thu nhỏ chữ để nằm trong vùng an toàn
+BG_TOP = (255, 227, 236)
+BG_MID = (248, 168, 192)
+BG_BOT = (231, 84, 128)
+RING = (255, 255, 255)
+MOTIF_FILL = (255, 255, 255)
+MOTIF_EDGE = (214, 51, 108)
+SPARKLE = (255, 255, 255)
 
 
-def find_font() -> str:
-    for path in [FONT_PATH, *FONT_FALLBACKS]:
-        if os.path.exists(path):
-            return path
-    raise SystemExit("Không tìm thấy font Noto Sans Black Italic.")
+def vertical_gradient(size, top, mid, bot):
+    """Gradient dọc 3 điểm dừng."""
+    img = Image.new("RGB", (size, size))
+    draw = ImageDraw.Draw(img)
+    for y in range(size):
+        t = y / (size - 1)
+        if t < 0.5:
+            k = t / 0.5
+            c = tuple(round(top[i] + (mid[i] - top[i]) * k) for i in range(3))
+        else:
+            k = (t - 0.5) / 0.5
+            c = tuple(round(mid[i] + (bot[i] - mid[i]) * k) for i in range(3))
+        draw.line([(0, y), (size, y)], fill=c)
+    return img.convert("RGBA")
 
 
-def render_glyph(text: str) -> Image.Image:
-    """Vẽ chữ trắng trên nền trong suốt, cắt sát, chuẩn hoá về tỉ lệ icon cũ."""
-    font = ImageFont.truetype(find_font(), 700)
-    canvas = Image.new("L", (2600, 1600), 0)
-    draw = ImageDraw.Draw(canvas)
-    x = 500
-    for ch in text:
-        draw.text((x, 300), ch, font=font, fill=255)
-        x += font.getlength(ch) + KERNING
-
-    glyph = canvas.crop(canvas.getbbox())
-    target_h = int(MASTER * GLYPH_H_RATIO)
-    scale = target_h / glyph.height
-    glyph = glyph.resize((max(1, round(glyph.width * scale)), target_h), Image.LANCZOS)
-
-    # nghiêng thêm: chừa khoảng trống hai bên để không bị cắt cụt
-    pad = 400
-    padded = Image.new("L", (glyph.width + pad * 2, glyph.height), 0)
-    padded.paste(glyph, (pad, 0))
-    pw, ph = padded.size
-    padded = padded.transform((pw, ph), Image.AFFINE,
-                             (1, SHEAR, -SHEAR * ph / 2, 0, 1, 0), resample=Image.BICUBIC)
-    glyph = padded.crop(padded.getbbox())
-
-    if glyph.width > MASTER * GLYPH_W_RATIO:
-        ratio = (MASTER * GLYPH_W_RATIO) / glyph.width
-        glyph = glyph.resize((round(MASTER * GLYPH_W_RATIO), max(1, round(glyph.height * ratio))), Image.LANCZOS)
-    return glyph
+def circle_mask(size, radius_ratio=0.5):
+    mask = Image.new("L", (size, size), 0)
+    d = ImageDraw.Draw(mask)
+    r = size * radius_ratio
+    d.ellipse([size / 2 - r, size / 2 - r, size / 2 + r, size / 2 + r], fill=255)
+    return mask
 
 
-def cut_mask(size: int, angle: float, thickness: float, center: tuple) -> Image.Image:
-    """Mặt nạ hình băng chéo — khoét chữ để tạo nét sổ."""
-    mask = Image.new("L", (size * 2, size * 2), 0)
-    draw = ImageDraw.Draw(mask)
-    t = size * thickness
-    cx, cy = size * 2 * center[0], size * 2 * center[1]
-    rad = math.radians(angle)
-    dx, dy = math.cos(rad), -math.sin(rad)
-    nx, ny = -dy, dx
-    span = size * 3
+def draw_sparkle(draw, x, y, s, fill):
+    p = 0.20
     draw.polygon([
-        (cx + dx * span, cy + dy * span), (cx - dx * span, cy - dy * span),
-        (cx - dx * span + nx * t, cy - dy * span + ny * t), (cx + dx * span + nx * t, cy + dy * span + ny * t),
-    ], fill=255)
-    return mask.crop((size // 2, size // 2, size // 2 + size, size // 2 + size))
+        (x, y - s), (x + s * p, y - s * p), (x + s, y),
+        (x + s * p, y + s * p), (x, y + s), (x - s * p, y + s * p),
+        (x - s, y), (x - s * p, y - s * p),
+    ], fill=fill)
 
 
-def build_master(glyph_scale: float = 1.0) -> Image.Image:
-    """Icon nền đen bo góc (bản dùng cho favicon và icon 'any')."""
-    icon = Image.new("RGBA", (MASTER, MASTER), (0, 0, 0, 0))
-    ImageDraw.Draw(icon).rounded_rectangle(
-        (0, 0, MASTER - 1, MASTER - 1), radius=round(MASTER * RADIUS_RATIO), fill=BG)
-
-    glyph = render_glyph(LABEL)
-    if glyph_scale != 1.0:
-        glyph = glyph.resize((max(1, round(glyph.width * glyph_scale)),
-                              max(1, round(glyph.height * glyph_scale))), Image.LANCZOS)
-
-    layer = Image.new("L", (MASTER, MASTER), 0)
-    layer.paste(glyph, ((MASTER - glyph.width) // 2, round((MASTER - glyph.height) * 0.52)))
-    layer = ImageChops.subtract(layer, cut_mask(MASTER, *CUT))
-    icon.paste(Image.new("RGBA", (MASTER, MASTER), FG), (0, 0), layer)
-    return icon
-
-
-def build_maskable() -> Image.Image:
-    """Bản maskable: nền đặc kín cả 4 góc (không trong suốt) và chữ thu nhỏ
-       để nằm gọn trong vùng an toàn 80% — Android cắt tròn/méo đều không mất chữ."""
-    glyph = render_glyph(LABEL)
-    small = glyph.resize((max(1, round(glyph.width * MASKABLE_SCALE)),
-                          max(1, round(glyph.height * MASKABLE_SCALE))), Image.LANCZOS)
-    icon = Image.new("RGBA", (MASTER, MASTER), BG)          # nền đặc, kín góc
-    layer = Image.new("L", (MASTER, MASTER), 0)
-    layer.paste(small, ((MASTER - small.width) // 2, round((MASTER - small.height) * 0.5)))
-    layer = ImageChops.subtract(layer, cut_mask(MASTER, *CUT))
-    icon.paste(Image.new("RGBA", (MASTER, MASTER), FG), (0, 0), layer)
-    return icon
+def draw_motif(base, scale=1.0):
+    """Sparkle 4 cánh trắng viền vàng ở giữa ảnh RGBA `base` (1024x1024)."""
+    size = MASTER
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    cx, cy = size // 2, size // 2
+    s = 300 * scale
+    p = 0.20
+    pts = [
+        (cx, cy - s), (cx + s * p, cy - s * p), (cx + s, cy),
+        (cx + s * p, cy + s * p), (cx, cy + s), (cx - s * p, cy + s * p),
+        (cx - s, cy), (cx - s * p, cy - s * p),
+    ]
+    d.polygon(pts, fill=MOTIF_FILL + (255,),
+              outline=MOTIF_EDGE + (255,), width=max(4, round(14 * scale)))
+    base.alpha_composite(layer)
 
 
-def write_ico(path: str, images: list) -> None:
-    """Đóng gói .ico với các khung PNG (đúng cấu trúc file ico cũ trong repo)."""
+def build_round():
+    """Icon tròn: gradient trong hình tròn, nền ngoài trong suốt."""
+    bg = vertical_gradient(MASTER, BG_TOP, BG_MID, BG_BOT)
+    bg.putalpha(circle_mask(MASTER))
+    d = ImageDraw.Draw(bg)
+    for (x, y, s) in ((250, 300, 42), (790, 350, 30), (700, 770, 36)):
+        draw_sparkle(d, x, y, s, SPARKLE + (230,))
+    draw_motif(bg)
+    r = MASTER / 2 - 16
+    d.ellipse([CENTER[0] - r, CENTER[1] - r, CENTER[0] + r, CENTER[1] + r],
+              outline=RING + (255,), width=26)
+    return bg
+
+
+def build_square_bg():
+    """Nền vuông gradient đặc (cho apple-touch-icon và maskable)."""
+    return vertical_gradient(MASTER, BG_TOP, BG_MID, BG_BOT)
+
+
+def build_apple(round_icon):
+    bg = build_square_bg()
+    bg.alpha_composite(round_icon)
+    return bg.convert("RGB")
+
+
+def build_maskable(round_icon):
+    bg = build_square_bg()
+    small = round_icon.resize((round(MASTER * 0.72),) * 2, Image.LANCZOS)
+    bg.alpha_composite(small, ((MASTER - small.width) // 2,) * 2)
+    return bg.convert("RGB")
+
+
+def write_ico(path, images):
+    """Đóng gói .ico với các khung PNG."""
     frames = []
+    tmpdir = tempfile.gettempdir()
     for img in images:
-        tmp = f"/tmp/.ico-frame-{img.size[0]}.png"
+        tmp = os.path.join(tmpdir, f".ico-frame-{img.size[0]}.png")
         img.save(tmp, format="PNG", optimize=True)
         with open(tmp, "rb") as fh:
             frames.append((img.size[0], fh.read()))
@@ -150,28 +137,31 @@ def write_ico(path: str, images: list) -> None:
         fh.write(header + entries + blobs)
 
 
-def main() -> None:
+def main():
     root = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else ".")
-    master = build_master()
-    maskable = build_maskable()
+    round_icon = build_round()
 
     written = []
     for name, size in (("favicon-16x16.png", 16), ("favicon-32x32.png", 32),
-                       ("apple-touch-icon.png", 180), ("icon-192.png", 192),
-                       ("icon-512.png", 512)):
-        master.resize((size, size), Image.LANCZOS).save(os.path.join(root, name), optimize=True)
+                       ("icon-192.png", 192), ("icon-512.png", 512)):
+        round_icon.resize((size, size), Image.LANCZOS).save(os.path.join(root, name), optimize=True)
         written.append(f"{name} ({size}px)")
 
-    maskable.resize((512, 512), Image.LANCZOS).save(os.path.join(root, "icon-512-maskable.png"), optimize=True)
+    build_apple(round_icon).resize((180, 180), Image.LANCZOS).save(
+        os.path.join(root, "apple-touch-icon.png"), optimize=True)
+    written.append("apple-touch-icon.png (180px, solid bg)")
+
+    build_maskable(round_icon).resize((512, 512), Image.LANCZOS).save(
+        os.path.join(root, "icon-512-maskable.png"), optimize=True)
     written.append("icon-512-maskable.png (512px)")
 
     write_ico(os.path.join(root, "favicon.ico"),
-              [master.resize((s, s), Image.LANCZOS) for s in (16, 32, 48, 64, 256)])
+              [round_icon.resize((s, s), Image.LANCZOS) for s in (16, 32, 48, 64, 256)])
     written.append("favicon.ico (16/32/48/64/256)")
 
     for line in written:
-        print("  ✓", line)
-    print(f"Xong — monogram \"{LABEL}\", nền bo góc {int(RADIUS_RATIO * 100)}%.")
+        print("  [ok]", line)
+    print("Done - round sakura sparkle icon.")
 
 
 if __name__ == "__main__":

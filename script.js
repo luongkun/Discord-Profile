@@ -624,7 +624,7 @@ function initSetlove() {
         resize();
         window.addEventListener('resize', resize);
 
-        const COLORS = ['#ff6b9d', '#ff8fb8', '#ff4f8b', '#ffa5c6', '#e8558f'];
+        const COLORS = ['#f06292', '#f8bbd0', '#e75480', '#f48fb1', '#d6336c'];
         const hearts = [];
 
         function spawnHeart() {
@@ -1000,10 +1000,10 @@ function initBannerVisualizer() {
 
         if (gradForW !== W) {
             grad = ctx.createLinearGradient(0, 0, W, 0);
-            grad.addColorStop(0, '#ff6b9d');
-            grad.addColorStop(0.45, '#ff8fb8');
-            grad.addColorStop(0.75, '#c084fc');
-            grad.addColorStop(1, '#a855f7');
+            grad.addColorStop(0, '#f8bbd0');
+            grad.addColorStop(0.45, '#f06292');
+            grad.addColorStop(0.75, '#d6336c');
+            grad.addColorStop(1, '#8e2447');
             gradForW = W;
         }
 
@@ -1024,8 +1024,8 @@ function initBannerVisualizer() {
         }
 
         // đường tâm mờ
-        ctx.globalAlpha = 0.18;
-        ctx.fillStyle = '#ffd1e3';
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#d6336c';
         ctx.fillRect(0, cy - 0.5, W, 1);
         ctx.globalAlpha = 1;
     }
@@ -1036,7 +1036,7 @@ function initBannerVisualizer() {
         if (!W || !H) return;
         ctx.clearRect(0, 0, W, H);
         const cy = H * CY_RATIO;
-        ctx.strokeStyle = 'rgba(255, 143, 184, 0.26)';
+        ctx.strokeStyle = 'rgba(214, 51, 108, 0.4)';
         ctx.lineWidth = 1.6;
         ctx.beginPath();
         for (let x = 0; x <= W; x += 5) {
@@ -1053,9 +1053,9 @@ function initBannerVisualizer() {
         ctx.clearRect(0, 0, W, H);
         const cy = H * CY_RATIO;
         const g = ctx.createLinearGradient(0, 0, W, 0);
-        g.addColorStop(0, 'rgba(255, 107, 157, 0.45)');
-        g.addColorStop(0.5, 'rgba(255, 143, 184, 0.55)');
-        g.addColorStop(1, 'rgba(168, 85, 247, 0.4)');
+        g.addColorStop(0, 'rgba(248, 187, 208, 0.6)');
+        g.addColorStop(0.5, 'rgba(240, 98, 146, 0.6)');
+        g.addColorStop(1, 'rgba(174, 42, 84, 0.5)');
         ctx.fillStyle = g;
         ctx.fillRect(0, cy - 1.5, W, 3);
     }
@@ -1426,7 +1426,10 @@ async function fetchDiscordInviteData(inviteUrl, idx) {
         }
 
         // Update real server banner or splash from Discord CDN
-        if (bannerEl) {
+        // (bo qua khi config dung banner local custom — manual override)
+        const cfgBanner = (CONFIG.servers && CONFIG.servers[idx] && CONFIG.servers[idx].banner) || '';
+        const customLocal = cfgBanner && !/^https?:\/\//i.test(cfgBanner);
+        if (bannerEl && !customLocal) {
             if (guild.banner) {
                 const isGif = guild.banner.startsWith('a_');
                 const ext = isGif ? 'gif' : 'png';
@@ -1735,6 +1738,11 @@ function initMouseEffects() {
     let hoveredElement = null;
     let physicsId = null;
 
+    // Mobile (cam ung): tat han hieu ung nghieng card — cham/scroll tren
+    // mobile van sinh mousemove gia khien card nghieng lech roi giu nguyen.
+    const isCoarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    const tiltAllowed = () => CONFIG.effects.enableTilt && tiltContainer && !isCoarsePointer;
+
     // Ambient spotlight được DỊCH bằng transform (xem style.css), KHÔNG vẽ lại gradient.
     // Trước đây mỗi lần rê chuột là một lần vẽ lại gradient phủ toàn màn hình.
     function moveSpotlight(x, y) {
@@ -1805,7 +1813,7 @@ function initMouseEffects() {
         ensurePhysics(); // có chuột động đậy là vòng physics phải thức
 
         // Calculate 3D Card Tilt relative to window center
-        if (CONFIG.effects.enableTilt && tiltContainer) {
+        if (tiltAllowed()) {
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight / 2;
             const maxTilt = 7; // degrees
@@ -1975,7 +1983,7 @@ function initMouseEffects() {
         }
 
         // Smooth Card Tilt
-        if (CONFIG.effects.enableTilt && tiltContainer) {
+        if (tiltAllowed()) {
             currentTiltX += (targetTiltX - currentTiltX) * 0.08;
             currentTiltY += (targetTiltY - currentTiltY) * 0.08;
             // Cùng cách kiểm tra như con trỏ ở trên: khởi tạo NaN thì phép so sánh
@@ -1996,7 +2004,7 @@ function initMouseEffects() {
         const still = Math.abs(cursorX - targetX) < 0.05 && Math.abs(cursorY - targetY) < 0.05 &&
                       Math.abs(currentAngle) < 0.05 && Math.abs(scaleX - 1) < 0.002 && Math.abs(scaleY - 1) < 0.002 &&
                       !hoveredElement &&
-                      (!(CONFIG.effects.enableTilt && tiltContainer) ||
+                      (!(tiltAllowed()) ||
                        (Math.abs(targetTiltX - currentTiltX) < 0.002 && Math.abs(targetTiltY - currentTiltY) < 0.002));
         if (!still) ensurePhysics();
     }
@@ -2039,6 +2047,29 @@ function initParticleCanvas() {
         });
     }
 
+    // Canh hoa anh dao roi (tat bang CONFIG.effects.enablePetals = false)
+    const PETAL_COLORS = ['#f8bbd0', '#f48fb1', '#f06292', '#ffd9e4', '#ffffff'];
+    const petals = [];
+    const petalCount = CONFIG.effects.enablePetals === false
+        ? 0 : Math.min(Math.floor((width * height) / 45000), 28);
+
+    function spawnPetal(anywhere) {
+        petals.push({
+            x: Math.random() * width,
+            y: anywhere ? Math.random() * height : -24,
+            size: Math.random() * 5 + 3.5,
+            fall: Math.random() * 0.7 + 0.45,
+            swayPhase: Math.random() * Math.PI * 2,
+            swaySpeed: Math.random() * 0.015 + 0.006,
+            swayAmp: Math.random() * 0.9 + 0.4,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.03,
+            alpha: Math.random() * 0.4 + 0.45,
+            color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)]
+        });
+    }
+    for (let i = 0; i < petalCount; i++) spawnPetal(true);
+
     // 4. Shooting Stars Generator (Lâu lâu có sao băng xẹt qua bầu trời)
     const shootingStars = [];
     let nextShootingStarTime = Date.now() + 1200; // Ngay sau khi vào 1.2s sẽ có 1 sao băng đầu tiên
@@ -2068,7 +2099,7 @@ function initParticleCanvas() {
             width: Math.random() * 1.5 + 2.2,
             alpha: 1.0,
             decay: Math.random() * 0.012 + 0.012,
-            glowHue: Math.random() > 0.4 ? 'rgba(168, 85, 247, 0.85)' : 'rgba(255, 255, 255, 0.95)',
+            glowHue: Math.random() > 0.4 ? 'rgba(240, 98, 146, 0.85)' : 'rgba(214, 51, 108, 0.9)',
             sparkTimer: 0
         });
 
@@ -2099,7 +2130,7 @@ function initParticleCanvas() {
 
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+            ctx.fillStyle = `rgba(231, 84, 128, ${p.alpha})`;
             ctx.fill();
 
             // Connect nearby particles
@@ -2116,12 +2147,44 @@ function initParticleCanvas() {
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(p2.x, p2.y);
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${0.07 * (1 - dist / 105)})`;
+                    ctx.strokeStyle = `rgba(214, 51, 108, ${0.13 * (1 - dist / 105)})`;
                     ctx.lineWidth = 0.75;
                     ctx.stroke();
                 }
             }
         }
+
+        // 1b. Canh hoa anh dao roi: vua roi vua lac, xoay nhe
+        for (let i = petals.length - 1; i >= 0; i--) {
+            const pt = petals[i];
+            pt.swayPhase += pt.swaySpeed;
+            pt.x += Math.sin(pt.swayPhase) * pt.swayAmp;
+            pt.y += pt.fall;
+            pt.rot += pt.rotSpeed;
+
+            if (pt.y > height + 24 || pt.x < -24 || pt.x > width + 24) {
+                petals.splice(i, 1);
+                spawnPetal(false);
+                continue;
+            }
+
+            ctx.save();
+            ctx.translate(pt.x, pt.y);
+            ctx.rotate(pt.rot);
+            ctx.globalAlpha = pt.alpha;
+            ctx.fillStyle = pt.color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, pt.size, pt.size * 0.62, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // diem sang lech mot ben cho giong canh hoa that
+            ctx.globalAlpha = pt.alpha * 0.55;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(-pt.size * 0.25, -pt.size * 0.15, pt.size * 0.45, pt.size * 0.28, 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        ctx.globalAlpha = 1;
 
         // 2. Draw Fluid Glowing Silk Comet Ribbon Trail (theo chuột)
         if (cometRibbon.length > 2) {
@@ -2150,11 +2213,11 @@ function initParticleCanvas() {
                 ctx.quadraticCurveTo(prevPt.x, prevPt.y, midX, midY);
                 ctx.lineTo(pt.x, pt.y);
 
-                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.strokeStyle = `rgba(240, 98, 146, ${alpha})`;
                 ctx.lineWidth = lineWidth;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.shadowColor = '#ffffff';
+                ctx.shadowColor = '#f06292';
                 ctx.shadowBlur = 10 * (1 - progress);
                 ctx.stroke();
             }
@@ -2178,8 +2241,8 @@ function initParticleCanvas() {
             ctx.save();
             ctx.beginPath();
             ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
-            ctx.shadowColor = '#ffffff';
+            ctx.fillStyle = `rgba(240, 98, 146, ${s.alpha})`;
+            ctx.shadowColor = '#f06292';
             ctx.shadowBlur = 8;
             ctx.fill();
             ctx.restore();
@@ -2226,10 +2289,10 @@ function initParticleCanvas() {
 
                 // Dải gradient phát quang từ đuôi mờ dần về đầu sáng rực
                 const tailGrad = ctx.createLinearGradient(tailX, tailY, star.x, star.y);
-                tailGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-                tailGrad.addColorStop(0.5, `rgba(255, 255, 255, ${star.alpha * 0.25})`);
-                tailGrad.addColorStop(0.85, `rgba(255, 255, 255, ${star.alpha * 0.75})`);
-                tailGrad.addColorStop(1, `rgba(255, 255, 255, ${star.alpha})`);
+                tailGrad.addColorStop(0, 'rgba(255, 180, 205, 0)');
+                tailGrad.addColorStop(0.5, `rgba(240, 120, 165, ${star.alpha * 0.35})`);
+                tailGrad.addColorStop(0.85, `rgba(214, 51, 108, ${star.alpha * 0.8})`);
+                tailGrad.addColorStop(1, `rgba(174, 42, 84, ${star.alpha})`);
 
                 ctx.beginPath();
                 ctx.moveTo(tailX, tailY);
@@ -2244,8 +2307,8 @@ function initParticleCanvas() {
                 // Tâm đầu sao băng rực sáng lấp lánh
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.width * 1.3, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
-                ctx.shadowColor = '#ffffff';
+                ctx.fillStyle = `rgba(240, 98, 146, ${star.alpha})`;
+                ctx.shadowColor = '#f06292';
                 ctx.shadowBlur = 22;
                 ctx.fill();
 
@@ -2339,6 +2402,10 @@ async function fetchLanyardREST() {
         setTimeout(fetchLanyardREST, 5000);
     }
 }
+
+/* Icon sparkle vẽ tay cho trạng thái mặc định (thay emoji ⚡) — theo mẫu Clone-Profile,
+   đổi gradient sang vàng cho hợp theme thiên thần */
+const STATUS_SPARKLE_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><defs><linearGradient id="status-sparkle-pink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd9e4"/><stop offset="1" stop-color="#e75480"/></linearGradient></defs><path d="M12 1c.7 5.5 4.5 9.3 10 10-5.5.7-9.3 4.5-10 10-.7-5.5-4.5-9.3-10-10 5.5-.7 9.3-4.5 10-10z" fill="url(#status-sparkle-pink)"/></svg>';
 
 function updateDiscordPresenceUI(data) {
     if (!data) return;
@@ -2434,7 +2501,7 @@ function updateDiscordPresenceUI(data) {
         if (customStatusEmoji) customStatusEmoji.innerHTML = emoji;
         if (customStatusText) customStatusText.textContent = customStatus.state || 'Online on Discord';
     } else {
-        if (customStatusEmoji) customStatusEmoji.textContent = '⚡';
+        if (customStatusEmoji) customStatusEmoji.innerHTML = STATUS_SPARKLE_SVG;
         if (customStatusText) customStatusText.textContent = `Status: ${discord_status.toUpperCase()} • Available`;
     }
 
@@ -2537,10 +2604,10 @@ function setMockDiscordState(is404 = false) {
     if (statusDot) statusDot.className = 'status-dot offline';
     if (headerStatusText) headerStatusText.textContent = 'DISCORD • STANDBY';
 
-    if (customStatusEmoji) customStatusEmoji.innerHTML = '⚡';
+    if (customStatusEmoji) customStatusEmoji.innerHTML = STATUS_SPARKLE_SVG;
     if (customStatusText) {
         if (is404) {
-            customStatusText.innerHTML = `Chưa kích hoạt Lanyard • <a href="https://discord.gg/lanyard" target="_blank" rel="noopener noreferrer" style="color:#ffffff;text-decoration:underline;font-weight:700;">Tham gia server discord.gg/lanyard để kích hoạt</a>`;
+            customStatusText.innerHTML = `Chưa kích hoạt Lanyard • <a href="https://discord.gg/lanyard" target="_blank" rel="noopener noreferrer" style="color:#d6336c;text-decoration:underline;font-weight:700;">Tham gia server discord.gg/lanyard để kích hoạt</a>`;
         } else {
             customStatusText.textContent = 'Đang kết nối Discord Lanyard...';
         }

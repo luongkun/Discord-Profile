@@ -12,8 +12,8 @@ Giao diện gồm: màn hình chào, thẻ profile (tên / tên ID / avatar / kh
 | `style.css` | Toàn bộ giao diện, responsive, hiệu ứng |
 | `config.js` | **Nơi cần sửa**: Discord ID, thông tin profile, máy chủ, social, playlist nhạc |
 | `script.js` | Lanyard realtime, render máy chủ, audio, cursor, particle, typewriter |
-| `bai1.mp3` | Nhạc nền |
-| `banner_executive.webp`, `profile_banner_cyber.webp` | Ảnh banner của card và của card máy chủ |
+| `thien-su-tinh-yeu.mp3` | Nhạc nền |
+| `banner_sakura.jpg`, `server_sakura.gif` | Ảnh banner của card và của card máy chủ |
 | `avatar_decoration.webp`, `favicon*`, `apple-touch-icon.png` | Icon, favicon |
 | `qr-bank.png` | Ảnh QR chuyển khoản, hiện khi bấm nút Donate |
 | `og-image.jpg` | Thẻ 1200×630 hiện khi chia sẻ link lên Facebook / Messenger / Discord |
@@ -21,7 +21,7 @@ Giao diện gồm: màn hình chào, thẻ profile (tên / tên ID / avatar / kh
 | `icon-512-maskable.png` | Bản maskable cho Android: nền đặc kín góc + chữ thu nhỏ nằm trong vùng an toàn |
 | `functions/api/stats.js` | API đếm lượt xem / lượt thích (Cloudflare Pages Function + KV) |
 | `.github/scripts/check_site.py` | Bộ kiểm tra tự động (chạy ở máy và trên CI) |
-| `.github/scripts/make_icons.py` | Sinh lại cả bộ icon từ chữ (đổi monogram chỉ cần sửa `LABEL`) |
+| `.github/scripts/make_icons.py` | Sinh lại cả bộ icon sparkle hồng anh đào (gradient + motif vẽ tay, không cần font — theo cách làm của Clone-Profile) |
 | `.github/scripts/make_og_image.py` | Sinh lại thẻ chia sẻ `og-image.jpg` |
 
 ### Ghi chú về dung lượng

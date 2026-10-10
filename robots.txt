@@ -1,9 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /bai1.mp3
-Disallow: /thang12-anh-co.mp3
-Disallow: /that-tinh.mp3
-Disallow: /chang-trai-bat-tu.mp3
+Disallow: /thien-su-tinh-yeu.mp3
 Disallow: /qr-bank.png
 
 Sitemap: https://luongkun.pages.dev/sitemap.xml

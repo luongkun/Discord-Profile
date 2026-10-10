@@ -27,7 +27,7 @@ const CONFIG = {
         avatar: "https://cdn.discordapp.com/avatars/1222143238056574990/cd20117cf2a6a045b8dd4b62cc048320.png?size=256",
         // Ảnh dự phòng local khi cdn.discordapp.com bị nhà mạng chặn (xảyra thật ở VN)
         avatarLocal: "avatar-me.webp",
-        banner: "banner_executive.webp",
+        banner: "banner_sakura.jpg",
         bio: "Just a normal guy who enjoys the simple things in life. Passionate about gaming, good music, and a perfect cup of coffee. Love traveling to new places, capturing moments, and binge-watching movies. Welcome to my little corner of the internet.",
         location: "Ninh Bình, Việt Nam",
         quotes: [
@@ -57,10 +57,10 @@ const CONFIG = {
             // Invite vĩnh viễn (không có expires_at) — kiểm tra bằng API invites/{code}?with_counts=true
             inviteUrl: "https://discord.gg/Mf2EHfNbMW",
             icon: "https://cdn.discordapp.com/icons/1267096791443312734/cd3ef9fd53d343c4c735e0640a6fb9c9.png?size=256",
-            // Server này chưa có banner riêng nên dùng ảnh local làm ảnh nền dự phòng
-            banner: "profile_banner_cyber.webp",
+            // Banner custom local = manual override, fetch live se khong ghi de
+            banner: "server_sakura.gif",
             cdnIcon: "https://cdn.discordapp.com/icons/1267096791443312734/cd3ef9fd53d343c4c735e0640a6fb9c9.png?size=256",
-            cdnBanner: "profile_banner_cyber.webp",
+            cdnBanner: "server_sakura.gif",
             members: "47 Members",
             online: "19 Online",
             tag: "COMMUNITY",
@@ -137,30 +137,15 @@ const CONFIG = {
         volume: 1,
         playlist: [
             {
-                title: "Mưa Đợi Chờ",
+                title: "Thiên sứ tình yêu",
                 artist: "Nguyễn Lương",
-                url: "bai1.mp3"
-            },
-            {
-                title: "Tháng 12 Anh Có",
-                artist: "Nguyễn Lương",
-                url: "thang12-anh-co.mp3"
-            },
-            {
-                title: "Thất Tình",
-                artist: "Nguyễn Lương",
-                url: "that-tinh.mp3"
-            },
-            {
-                title: "Chàng Trai Bất Tử",
-                artist: "Nguyễn Lương",
-                url: "chang-trai-bat-tu.mp3"
+                url: "thien-su-tinh-yeu.mp3"
             }
         ],
         // Default / Initial Track Fallback
-        title: "Mưa Đợi Chờ",
+        title: "Thiên sứ tình yêu",
         artist: "Nguyễn Lương",
-        url: "bai1.mp3"
+        url: "thien-su-tinh-yeu.mp3"
     },
 
     // 6. HIỆU ỨNG:
@@ -169,7 +154,8 @@ const CONFIG = {
         enableSpotlight: true,
         enableCustomCursor: true,
         enableParticles: true,
-        enableShootingStars: true
+        enableShootingStars: true,
+        enablePetals: true
     },
 
     // 7. SỞ THÍCH & PHONG CÁCH SỐNG (CORE - 6 PILLARS):

@@ -3,7 +3,7 @@
  * Chiến lược: KHÔNG cache trang (presence phải luôn realtime), chỉ dự phòng
  * khi MẠNG CHẾT hẳn — trả trang chính + ảnh dự phòng đã có sẵn trong SW.
  */
-const CACHE = 'luongkun-shell-v3';
+const CACHE = 'luongkun-shell-v6';
 // LƯU Ý QUAN TRỌNG: chỉ đưa vào đây những đường dẫn trả 200 TRỰC TIẾP.
 // Cloudflare Pages chuyển hướng 308 cho '/index.html' và '/404.html', mà
 // cache.addAll thất bại nếu gặp phản hồi không phải 200 -> service worker
