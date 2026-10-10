@@ -3432,3 +3432,6 @@ body.love-open .love-arrow { color: #f06292; background: rgba(214, 51, 108, 0.12
 .setlove-inner { background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,240,244,0.65)); }
 .mesh-blob { opacity: 1; }
 .love-mesh { opacity: 1; }
+
+#stat-views, #stat-likes { color: #96506a; font-weight: 700; }
+.stats-like { color: #e75480; }
