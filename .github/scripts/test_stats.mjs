@@ -9,13 +9,13 @@
  * Cách dùng:  node .github/scripts/test_stats.mjs [thư_mục_gốc]
  */
 
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(process.argv[2] || path.join(here, '..', '..'));
 const target = path.join(root, 'functions', 'api', 'stats.js');
-const api = await import('file://' + encodeURI(target));
+const api = await import(pathToFileURL(target).href);
 
 const HOST = 'https://luongkun.pages.dev';
 
