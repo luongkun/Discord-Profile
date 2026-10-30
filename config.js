@@ -51,18 +51,18 @@ const CONFIG = {
         {
             // Tên, avatar, số thành viên & số online sẽ được cập nhật real-time từ Discord
             // (script.js gọi api discord.com/api/v9/invites/{code}?with_counts=true)
-            name: "Starlight Brigade",
-            role: "Cộng đồng Starlight Brigade",
-            description: "Máy chủ Discord Starlight Brigade — nơi giao lưu, chơi game và kết nối cùng mọi người.",
+            name: "Ex Place",
+            role: "Cộng đồng Ex Place",
+            description: "Máy chủ Discord Ex Place — nơi giao lưu, chơi game và kết nối cùng mọi người.",
             // Invite vĩnh viễn (không có expires_at) — kiểm tra bằng API invites/{code}?with_counts=true
-            inviteUrl: "https://discord.gg/Mf2EHfNbMW",
-            icon: "https://cdn.discordapp.com/icons/1267096791443312734/cd3ef9fd53d343c4c735e0640a6fb9c9.png?size=256",
+            inviteUrl: "https://discord.gg/KUwRdanes8",
+            icon: "https://cdn.discordapp.com/icons/1267096791443312734/4710b0f4bee1944a47fd3e4d904db268.png?size=256",
             // Banner custom local = manual override, fetch live se khong ghi de
             banner: "server_sakura.gif",
-            cdnIcon: "https://cdn.discordapp.com/icons/1267096791443312734/cd3ef9fd53d343c4c735e0640a6fb9c9.png?size=256",
+            cdnIcon: "https://cdn.discordapp.com/icons/1267096791443312734/4710b0f4bee1944a47fd3e4d904db268.png?size=256",
             cdnBanner: "server_sakura.gif",
-            members: "47 Members",
-            online: "19 Online",
+            members: "31 Members",
+            online: "5 Online",
             tag: "COMMUNITY",
             featured: true
         }
